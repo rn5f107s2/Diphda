@@ -4,6 +4,9 @@
 #include "attacks.h"
 
 int main(int argc, char** argv) {
-    UCIHandler uci;
-    uci.start(argc, argv);
+    Attacks::init();
+
+    UCIHandler* uci = new UCIHandler();
+    uci->start(argc, argv);
+    delete uci;
 }

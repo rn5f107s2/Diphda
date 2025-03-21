@@ -5,7 +5,7 @@
 
 using Bitboard = uint64_t;
 
-enum class PieceType : uint8_t {
+enum class PieceType : int8_t {
     PAWN,
     KNIGHT,
     BISHOP,
@@ -60,7 +60,7 @@ private:
 
 class Rank {
     public:
-        enum Value : uint8_t {
+        enum Value : int8_t {
             RANK_1,
             RANK_2,
             RANK_3,
@@ -75,7 +75,7 @@ class Rank {
     
         constexpr operator Value() const { return value; }
 
-        constexpr explicit operator Bitboard() const { return 0xff << (int(value) * 8); }
+        constexpr explicit operator Bitboard() const { return 0xffULL << (int(value) * 8); }
     
         std::string toString() {
             return std::string{ char('1' + value) };
@@ -83,11 +83,11 @@ class Rank {
     
     private:
         Value value;
-    };
+};
 
 class Square {
 public:
-    enum Value : uint8_t {
+    enum Value : int8_t {
         H1, G1, F1, E1, D1, C1, B1, A1,
         H2, G2, F2, E2, D2, C2, B2, A2,
         H3, G3, F3, E3, D3, C3, B3, A3,
@@ -98,6 +98,7 @@ public:
         H8, G8, F8, E8, D8, C8, B8, A8,
 
         NONE,
+        COUNT = 64
     };
 
     constexpr Square(Value v) : value(v) {}
@@ -148,7 +149,7 @@ private:
 
 class Piece {
 public:
-    enum Value : uint8_t {
+    enum Value : int8_t {
         WHITE_PAWN,
         WHITE_KNIGHT,
         WHITE_BISHOP,

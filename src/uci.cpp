@@ -13,7 +13,7 @@ UCIHandler::UCIHandler() {
 } 
 
 void UCIHandler::start(int argc, char** argv) {
-    return loop();
+    loop();
 }
 
 void UCIHandler::loop() {
@@ -23,7 +23,7 @@ void UCIHandler::loop() {
         std::getline(std::cin, input);
 
         if (input == "quit")
-            break;;
+            break;
 
         handleInput(input);
     }
