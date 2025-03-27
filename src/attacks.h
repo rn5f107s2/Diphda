@@ -32,7 +32,7 @@ inline Bitboard getPawnMoves(Square square, Bitboard occupied, Color color) {
     Bitboard moves = up(Bitboard(square)) & ~occupied;
 
     if (square.getRank() == doubleMoveRank)
-        moves |= up(moves);
+        moves |= up(moves) & ~occupied;
 
     return moves;
 }
@@ -74,4 +74,17 @@ inline Bitboard getQueenAttacks(Square square, Bitboard occupied) {
 
 inline Bitboard getKingAttacks(Square square) {
     return Attacks::kingAttacks[int(square)];
+}
+
+template<PieceType TYPE>
+constexpr Bitboard getAttacks(Square square, Bitboard occupied = Bitboard(0), Color color = Color::WHITE) {
+    switch (TYPE)
+    {
+        case PieceType::PAWN  : return getPawnAttacks(square, color);
+        case PieceType::KNIGHT: return getKnightAttacks(square);
+        case PieceType::BISHOP: return getBishopAttacks(square, occupied);
+        case PieceType::ROOK  : return getRookAttacks(square, occupied);
+        case PieceType::QUEEN : return getQueenAttacks(square, occupied);
+        default /* KING */    : return getKingAttacks(square);
+    }
 }

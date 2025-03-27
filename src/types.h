@@ -25,6 +25,8 @@ enum class Color : bool {
     BLACK
 };
 
+constexpr Color operator~(Color color) { return Color(!bool(color)); };
+
 class File {
 public:
     enum Value : int8_t {
@@ -51,7 +53,7 @@ public:
     }; 
 
     std::string toString() {
-        return std::string{ char('H' - value) };
+        return std::string{ char('h' - value) };
     }
 
 private:
@@ -76,6 +78,10 @@ class Rank {
         constexpr operator Value() const { return value; }
 
         constexpr explicit operator Bitboard() const { return 0xffULL << (int(value) * 8); }
+
+        bool isBackrank() {
+            return value == RANK_1 || value == RANK_8;
+        }
     
         std::string toString() {
             return std::string{ char('1' + value) };
@@ -101,7 +107,11 @@ public:
         COUNT = 64
     };
 
+    constexpr Square() : value(NONE) {}
+
     constexpr Square(Value v) : value(v) {}
+
+    constexpr Square(int v) : value(Value(v)) {}
 
     constexpr operator Value() const { return value; }
 
@@ -214,3 +224,11 @@ private:
         }
     }
 };
+
+inline Square popLSB(Bitboard &bb) {
+    Square lsb = Square(__builtin_ctzll(bb));
+
+    bb &= bb - 1;
+
+    return lsb;
+}

@@ -1,4 +1,5 @@
 #include <array>
+#include <iostream>
 
 #include "attacks.h"
 #include "types.h"
@@ -98,7 +99,7 @@ std::array<std::array<Bitboard, ATTACK_TABLE_SIZE>, Square::COUNT> initAttackTab
         int      shift = shifts[square];
 
         do {
-            int index = ((mask * blockers) * magic) >> shift;
+            int index = ((mask & blockers) * magic) >> shift;
 
             attackTable[square][index] = sliderAttacksSlow(square, blockers, BISHOP);
 
