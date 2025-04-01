@@ -13,7 +13,17 @@ UCIHandler::UCIHandler() {
 } 
 
 void UCIHandler::start(int argc, char** argv) {
-    loop();
+    if (argc == 1)
+        return loop();
+
+    for (int i = 1; i < argc; i++) {
+        std::string in = argv[i];
+    
+        if (in == "quit")
+            break;
+    
+        handleInput(in);
+    }
 }
 
 void UCIHandler::loop() {
