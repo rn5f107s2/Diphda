@@ -32,6 +32,10 @@ public:
 
     constexpr operator Value() const { return value; }
 
+    PieceType getType() {
+        return PieceType(value + 1);
+    }
+
     std::string toString() {
         switch (value) {
             case KNIGHT: return "n";

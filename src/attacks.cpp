@@ -10,6 +10,8 @@ std::array<Bitboard, Square::COUNT> initJumperAttacks(Bitboard (*slowAttacks)(Sq
 std::array<Bitboard, Square::COUNT> initSliderMasks(bool bishop);
 std::array<int     , Square::COUNT> initSliderShifts(std::array<Bitboard, Square::COUNT> &masks);
 
+std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> initMaskBB(bool extended);
+
 Bitboard knightAttacksSlow(Square square);
 Bitboard sliderAttacksSlow(Square square, Bitboard blocker, bool bishop);
 Bitboard kingAttacksSlow(Square square);
@@ -25,6 +27,9 @@ std::array<int, Square::COUNT> rookShifts;
 
 std::array<std::array<Bitboard,  512>, Square::COUNT> bishopTable;
 std::array<std::array<Bitboard, 4096>, Square::COUNT> rookTable;
+
+std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> betweenBB;
+std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> lineBB;
 
 const std::array<uint64_t, Square::COUNT> bishopMagics {
     5226430236606988800ULL, 5226430236606988800ULL, 308593332580267072ULL, 362825647322173444ULL,
@@ -122,6 +127,9 @@ void init() {
 
     bishopTable = initAttackTables< 512>();
     rookTable   = initAttackTables<4096>();
+
+       lineBB = initMaskBB(true );
+    betweenBB = initMaskBB(false);
 }
 
 std::array<Bitboard, Square::NONE> initJumperAttacks(Bitboard (*slowAttacks)(Square square)) {
@@ -213,6 +221,26 @@ std::array<int, Square::COUNT> initSliderShifts(std::array<Bitboard, Square::COU
     }
 
     return shifts;
+}
+
+std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> initMaskBB(bool extended) {
+    std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> masksBB;
+
+    for (Square sq1 = Square::H1; sq1 < Square::NONE; ++sq1) {
+        for (Square sq2 = Square::H1; sq2 < Square::NONE; ++sq2) {
+            Bitboard occupied = extended ? 0 : Bitboard(sq1) | Bitboard(sq2);
+            Bitboard mask     = 0;
+
+            if (::getBishopAttacks(sq1, occupied) & Bitboard(sq2))
+                mask = ::getBishopAttacks(sq1, occupied) & ::getBishopAttacks(sq2, occupied);
+            else if (::getRookAttacks(sq1, occupied) & Bitboard(sq2))
+                mask = ::getRookAttacks(sq1, occupied) & ::getRookAttacks(sq2, occupied);
+
+            masksBB[sq1][sq2] = mask;
+        }
+    }
+
+    return masksBB;
 }
 
 }

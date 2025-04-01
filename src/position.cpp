@@ -5,6 +5,7 @@
 
 #include "position.h"
 #include "uci.h"
+#include "attacks.h"
 
 void Position::setPosition(std::string fen) {
     std::vector<std::string> splitFEN = split(fen, ' ');
@@ -49,23 +50,50 @@ void Position::removePiece(Piece piece, Square square) {
     colors[int(piece.getColor())] ^= bb;
 }
 
-Piece Position::getPieceOn(Square square) {
-    Color     color = Color::BLACK; 
-    PieceType type  = PieceType::NO_TYPE;
+void Position::makeMove(Move move) {
+    Square   from = move.getFrom();
+    Square   to   = move.getTo();
+    MoveType type = move.getType();
 
-    for (PieceType pt = PieceType::PAWN; pt <= PieceType::KING; ++pt) {
-        if (!(getPieces(pt) & Bitboard(square)))
-            continue;
+    Piece movedPiece = getPieceOn(from);
+    Piece captured   = getPieceOn(to);
 
-        type = pt;
-        break;
+    removePiece(movedPiece, from);
+
+    if (captured != Piece::NONE)
+        removePiece(captured, to);
+
+    if (type == MoveType::PROMO)
+        movedPiece = Piece(sideToMove, move.getPromo().getType());
+
+    addPiece(movedPiece, to);
+
+    sideToMove = ~sideToMove;
+}
+
+void Position::initPinnedPieces() {
+    pinnedPieces = Bitboard(0);
+
+    Color us   = sideToMove;
+    Color them = ~us;
+
+    Square kingSquare = getKingSquare(sideToMove);
+
+    Bitboard opponent = getPieces(~sideToMove);
+    Bitboard possiblePinners =   (getBishopAttacks(kingSquare, opponent) & (getPieces<PieceType::QUEEN>(them) | getPieces<PieceType::BISHOP>(them)))
+                               | (getRookAttacks  (kingSquare, opponent) & (getPieces<PieceType::QUEEN>(them) | getPieces<PieceType::ROOK  >(them)));
+
+    while (possiblePinners) {
+        int pinnerSquare    = popLSB(possiblePinners);
+        Bitboard pinnedLine = betweenBB(pinnerSquare, kingSquare) & getPieces(us);
+
+        if (!multipleBits(pinnedLine))
+            pinnedPieces |= pinnedLine;
     }
+}
 
-    // Black is default, so no extra check needed
-    if (getPieces(Color::WHITE) & Bitboard(square))
-        color = Color::WHITE;
-
-    return Piece(color, type);
+void Position::initCheckers() {
+    checkers = attackersTo(getKingSquare(sideToMove));
 }
 
 std::string Position::toString() {

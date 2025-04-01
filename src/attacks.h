@@ -20,6 +20,9 @@ namespace Attacks {
     const extern std::array<uint64_t, Square::COUNT> bishopMagics;
     const extern std::array<uint64_t, Square::COUNT> rookMagics;
 
+    extern std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> betweenBB;
+    extern std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> lineBB;
+
     void init();
 }
 
@@ -40,8 +43,11 @@ inline Bitboard getPawnMoves(Square square, Bitboard occupied, Color color) {
 inline Bitboard getPawnAttacks(Square square, Color color) {
     auto up = color == Color::WHITE ? [](Bitboard bb) { return bb << 8;  } 
                                     : [](Bitboard bb) { return bb >> 8;  };
+                                    
+    Bitboard leftBB  = Bitboard(square) & ~Bitboard(File(File::A_FILE));
+    Bitboard rightBB = Bitboard(square) & ~Bitboard(File(File::H_FILE));
 
-    return up(Bitboard(square)) >> 1 | up(Bitboard(square)) << 1;
+    return up(leftBB) << 1 | up(rightBB) >> 1;
 }
 
 inline Bitboard getKnightAttacks(Square square) {
@@ -87,4 +93,12 @@ constexpr Bitboard getAttacks(Square square, Bitboard occupied = Bitboard(0), Co
         case PieceType::QUEEN : return getQueenAttacks(square, occupied);
         default /* KING */    : return getKingAttacks(square);
     }
+}
+
+inline Bitboard lineBB(Square sq1, Square sq2) {
+    return Attacks::lineBB[sq1][sq2];
+}
+
+inline Bitboard betweenBB(Square sq1, Square sq2) {
+    return Attacks::betweenBB[sq1][sq2];
 }

@@ -1,18 +1,29 @@
 #pragma once
 
-#include "position.h"
-#include "move.h"
-
 #include <iostream>
+#include <array>
+
+#include "move.h"
 
 class MoveList {
 public:
     void pushBack(Move move) {
-        std::cout << "Added " << move.toString() << std::endl;
-        moves[index++] = move;
+        moves[position++] = move;
+    }
+
+    auto begin() {
+        return moves.begin();
+    }
+
+    auto end() {
+        return moves.begin() + position;
+    }
+
+    size_t length() {
+        return position;
     }
 
 private:
     std::array<Move, 256> moves;
-    int index = 0;
+    int position = 0;
 };

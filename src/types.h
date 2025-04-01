@@ -113,6 +113,8 @@ public:
 
     constexpr Square(int v) : value(Value(v)) {}
 
+    constexpr Square(File f, Rank r) : value(Value(int(f) + int(r) * 8)) {}
+
     constexpr operator Value() const { return value; }
 
     constexpr explicit operator Bitboard() const { return 1ULL << int(value); }
@@ -174,12 +176,16 @@ public:
         BLACK_QUEEN,
         BLACK_KING,
 
-        NO_PIECE
+        NONE
     };
 
     constexpr Piece(char c) : value(valueOf(c)) {}
+
     constexpr Piece(Value v) : value(v) {}
+
     constexpr Piece(Color c, PieceType pt) : value(Value(int(pt) + (c == Color::BLACK) * Piece::BLACK_PAWN)) {}
+
+    constexpr operator Value() const { return value; }
 
     constexpr Color getColor() const {
         return value <= Value::WHITE_KING ? Color::WHITE : Color::BLACK;
@@ -190,7 +196,7 @@ public:
     }
 
     std::string toString() const {
-        return std::string{ value == NO_PIECE ? '-' : toChar() }; 
+        return std::string{ value == NONE ? '-' : toChar() }; 
     }
 
 private:
@@ -220,15 +226,23 @@ private:
             case 'q': return Value::BLACK_QUEEN;
             case 'k': return Value::BLACK_KING;
 
-            default : return Value::NO_PIECE;
+            default : return Value::NONE;
         }
     }
 };
 
+inline bool multipleBits(Bitboard bb) {
+    return bb & (bb - 1);
+}
+
+inline Square lsb(Bitboard bb) {
+    return Square(__builtin_ctzll(bb));
+}
+
 inline Square popLSB(Bitboard &bb) {
-    Square lsb = Square(__builtin_ctzll(bb));
+    Square ret = lsb(bb);
 
     bb &= bb - 1;
 
-    return lsb;
+    return ret;
 }
