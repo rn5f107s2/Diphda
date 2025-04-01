@@ -13,6 +13,8 @@ void Position::setPosition(std::string fen) {
     clear();
 
     parsePieces(splitFEN.at(0));
+    parseSideToMove(splitFEN.at(1));
+    parseCastling(splitFEN.at(2));
 }
 
 void Position::parsePieces(std::string piecesFen) {
@@ -33,6 +35,23 @@ void Position::parsePieces(std::string piecesFen) {
         addPiece(piece, currentSquare);
 
         --currentSquare;
+    }
+}
+
+void Position::parseSideToMove(std::string stmFen) {
+    sideToMove = stmFen.at(0) == 'b' ? Color::BLACK : Color::WHITE;
+}
+
+void Position::parseCastling(std::string castlingFen) {
+    castlingRights.reset();
+
+    for (char c : castlingFen) {
+        switch (c) {
+            case 'K': castlingRights.set(CastlingRights::WHITE_KINGSIDE); break;
+            case 'Q': castlingRights.set(CastlingRights::WHITE_QUEENSIDE); break;
+            case 'k': castlingRights.set(CastlingRights::BLACK_KINGSIDE); break;
+            case 'q': castlingRights.set(CastlingRights::BLACK_QUEENSIDE); break;
+        }
     }
 }
 
@@ -58,13 +77,37 @@ void Position::makeMove(Move move) {
     Piece movedPiece = getPieceOn(from);
     Piece captured   = getPieceOn(to);
 
+    castlingRights.updateCastlingRights(from);
+    castlingRights.updateCastlingRights(to);
+
     removePiece(movedPiece, from);
 
     if (captured != Piece::NONE)
         removePiece(captured, to);
 
+    if (type == MoveType::EN_PASSANT)
+        removePiece(Piece(~sideToMove, PieceType::PAWN), Square(to.getFile(), from.getRank()));
+
+    enPassantSquare = Square::NONE;
+
+    if (   movedPiece.getType() == PieceType::PAWN
+        && abs(from - to) == 16)
+        enPassantSquare = Square((from + to) >> 1);
+
     if (type == MoveType::PROMO)
         movedPiece = Piece(sideToMove, move.getPromo().getType());
+
+    if (type == MoveType::CASTLING) {
+        Rank backRank = sideToMove == Color::WHITE ? Rank::RANK_1 : Rank::RANK_8;
+
+        File rFrom = from > to ? File::H_FILE : File::A_FILE;
+        File rTo   = from > to ? File::F_FILE : File::D_FILE;
+
+        Piece rook = Piece(sideToMove, PieceType::ROOK);
+
+        removePiece(rook, Square(rFrom, backRank));
+        addPiece(rook, Square(rTo, backRank));
+    }
 
     addPiece(movedPiece, to);
 

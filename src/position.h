@@ -26,6 +26,9 @@ public:
     Square getEPSquare() const;
 
     bool isAttacked(Square square, Bitboard occupied) const;
+    bool isAttacked(Square square, Bitboard occupied, Square capturedPawn) const;
+
+    bool canCastle(CastlingRights::Value side) const;
 
     void generateMoves(MoveList &ml);
 
@@ -41,13 +44,16 @@ private:
     std::array<Bitboard, 2                    > colors;
     std::array<Bitboard, int(PieceType::COUNT)> pieces;
 
-    Color  sideToMove;
-    Square enPassantSquare;
+    Color          sideToMove;
+    Square         enPassantSquare;
+    CastlingRights castlingRights;
 
     Bitboard pinnedPieces;
     Bitboard checkers;
 
     void parsePieces(std::string piecesFen);
+    void parseSideToMove(std::string stmFen);
+    void parseCastling(std::string castlingFen);
 
     void  addPiece(Piece piece, Square square);
     void  removePiece(Piece piece, Square square);
@@ -117,6 +123,11 @@ inline Square Position::getEPSquare() const {
     return enPassantSquare;
 }
 
+inline bool Position::canCastle(CastlingRights::Value side) const {
+    return castlingRights.canCastle(side);
+}
+
+
 inline Bitboard Position::attackersTo(Square square) {
     Color them = ~sideToMove;
 
@@ -131,6 +142,16 @@ inline bool Position::isAttacked(Square square, Bitboard occupied) const {
     Color them = ~sideToMove;
 
     return    getPawnAttacks  (square, sideToMove) &  getPieces<PieceType::PAWN>  (them)
+           || getKnightAttacks(square            ) &  getPieces<PieceType::KNIGHT>(them)
+           || getKingAttacks  (square            ) & (getPieces<PieceType::KING  >(them))
+           || getBishopAttacks(square, occupied  ) & (getPieces<PieceType::BISHOP>(them) | getPieces<PieceType::QUEEN>(them))
+           || getRookAttacks  (square, occupied  ) & (getPieces<PieceType::ROOK  >(them) | getPieces<PieceType::QUEEN>(them));
+}
+
+inline bool Position::isAttacked(Square square, Bitboard occupied, Square capturedPawn) const {
+    Color them = ~sideToMove;
+
+    return    getPawnAttacks  (square, sideToMove) & (getPieces<PieceType::PAWN>  (them) ^ Bitboard(capturedPawn))
            || getKnightAttacks(square            ) &  getPieces<PieceType::KNIGHT>(them)
            || getKingAttacks  (square            ) & (getPieces<PieceType::KING  >(them))
            || getBishopAttacks(square, occupied  ) & (getPieces<PieceType::BISHOP>(them) | getPieces<PieceType::QUEEN>(them))

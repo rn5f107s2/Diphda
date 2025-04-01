@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string> 
+#include <array>
 
 using Bitboard = uint64_t;
 
@@ -52,7 +53,7 @@ public:
         return *this;
     }; 
 
-    std::string toString() {
+    inline std::string toString() {
         return std::string{ char('h' - value) };
     }
 
@@ -79,11 +80,11 @@ class Rank {
 
         constexpr explicit operator Bitboard() const { return 0xffULL << (int(value) * 8); }
 
-        bool isBackrank() {
+        constexpr bool isBackrank() {
             return value == RANK_1 || value == RANK_8;
         }
     
-        std::string toString() {
+        inline std::string toString() {
             return std::string{ char('1' + value) };
         }
     
@@ -229,6 +230,52 @@ private:
             default : return Value::NONE;
         }
     }
+};
+
+class CastlingRights {
+public:
+    enum Value {
+        WHITE_KINGSIDE, WHITE_QUEENSIDE, 
+        BLACK_KINGSIDE, BLACK_QUEENSIDE
+    };
+
+    constexpr CastlingRights() : raw(0b00001111) {}
+
+    constexpr bool canCastle(Value v) const {
+        return (1ULL << v) & raw;
+    }
+
+    constexpr static Value valueOf(Color side, bool queenSide) {
+        return Value((side == Color::BLACK) * 2 + queenSide);
+    }
+
+    constexpr void updateCastlingRights(Square movedSquare) {
+        raw &= ~castlingMasks[movedSquare];
+    }
+
+    constexpr void reset() {
+        raw = 0;
+    }
+
+    constexpr void set(Value v) {
+        raw |= (1ULL << v);
+    }
+
+private:
+    const std::array<uint8_t, 64> castlingMasks = 
+    {
+        // H1                A1
+        1, 0, 0,  3, 0, 0, 0, 2,
+        0, 0, 0,  0, 0, 0, 0, 0,
+        0, 0, 0,  0, 0, 0, 0, 0,
+        0, 0, 0,  0, 0, 0, 0, 0,
+        0, 0, 0,  0, 0, 0, 0, 0,
+        0, 0, 0,  0, 0, 0, 0, 0,
+        0, 0, 0,  0, 0, 0, 0, 0,
+        4, 0, 0, 12, 0, 0, 0, 8
+    };
+
+    uint8_t raw;
 };
 
 inline bool multipleBits(Bitboard bb) {
