@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "position.h"
+#include "chess/position.h"
 
 template<bool ROOT>
 uint64_t perft(Position &pos, int depth) {

@@ -4,8 +4,9 @@
 #include <vector>
 
 #include "position.h"
-#include "uci.h"
 #include "attacks.h"
+#include "../uci.h"
+
 
 void Position::setPosition(std::string fen) {
     std::vector<std::string> splitFEN = split(fen, ' ');

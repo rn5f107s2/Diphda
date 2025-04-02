@@ -3,7 +3,7 @@
 #include <iostream>
 #include <array>
 
-#include "move.h"
+#include "chess/move.h"
 
 class MoveList {
 public:

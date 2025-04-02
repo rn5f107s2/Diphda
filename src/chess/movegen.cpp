@@ -1,7 +1,7 @@
 #include "movegen.h"
-#include "movelist.h"
 #include "position.h"
 #include "attacks.h"
+#include "../movelist.h"
 
 namespace Movegen {
 

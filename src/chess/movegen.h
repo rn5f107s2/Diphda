@@ -1,6 +1,6 @@
 #pragma once
 
-#include "movelist.h"
+#include "../movelist.h"
 
 class Position;
 

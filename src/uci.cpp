@@ -1,7 +1,7 @@
 #include <iostream> 
 
 #include "uci.h"
-#include "position.h"
+#include "chess/position.h"
 
 UCIHandler::UCIHandler() {
     internalBoard = new Position();

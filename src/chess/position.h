@@ -5,9 +5,9 @@
 
 #include "types.h"
 #include "move.h"
-#include "movelist.h"
 #include "movegen.h"
 #include "attacks.h"
+#include "../movelist.h"
 
 class Position {
 public:

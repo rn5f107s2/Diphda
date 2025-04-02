@@ -1,10 +1,7 @@
 #include <iostream>
 
 #include "uci.h"
-#include "attacks.h"
-#include "movegen.h"
-#include "position.h"
-#include  "perft.h"
+#include "chess/attacks.h"
 
 int main(int argc, char** argv) {
     Attacks::init();
