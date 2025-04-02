@@ -5,7 +5,7 @@
 
 #include "position.h"
 #include "attacks.h"
-#include "../utility.h"
+#include "../../utility.h"
 
 namespace Chess {
 

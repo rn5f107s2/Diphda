@@ -1,5 +1,5 @@
 #pragma once
 
-#include "../chess/move.h"
+#include "../games/chess/move.h"
 
 using Move = Chess::Move;

@@ -1,5 +1,5 @@
 #pragma once
 
-#include "../chess/position.h"
+#include "../games/chess/position.h"
 
 using Position = Chess::Position;

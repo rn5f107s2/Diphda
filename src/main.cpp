@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "uci.h"
-#include "chess/attacks.h"
+#include "games/chess/attacks.h"
 
 int main(int argc, char** argv) {
     Chess::Attacks::init();

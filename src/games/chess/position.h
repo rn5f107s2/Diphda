@@ -7,7 +7,7 @@
 #include "move.h"
 #include "movegen.h"
 #include "attacks.h"
-#include "../movelist.h"
+#include "../../movelist.h"
 
 namespace Chess {
 
