@@ -2,11 +2,11 @@
 
 #include "uci.h"
 #include "utility.h"
-#include "chess/position.h"
 #include "perft.h"
+#include "game/game.h"
 
 UCIHandler::UCIHandler() {
-    internalBoard = new Chess::Position();
+    internalBoard = new Position();
 
     internalBoard->setPosition(defaultFEN);
 

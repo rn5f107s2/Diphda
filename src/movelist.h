@@ -3,11 +3,11 @@
 #include <iostream>
 #include <array>
 
-#include "chess/move.h"
+#include "game/gamemove.h"
 
 class MoveList {
 public:
-    void pushBack(Chess::Move move) {
+    void pushBack(Move move) {
         moves[position++] = move;
     }
 
@@ -24,6 +24,6 @@ public:
     }
 
 private:
-    std::array<Chess::Move, 256> moves;
+    std::array<Move, 256> moves;
     int position = 0;
 };
