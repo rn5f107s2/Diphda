@@ -5,7 +5,8 @@
 #include <sstream>
 #include <unordered_map>
 
-class Position;
+#include "chess/position.h"
+
 
 static const std::string name       = "Diphda";
 static const std::string version    = "0.1";
@@ -24,16 +25,6 @@ private:
     void loop();
     void handleInput(const std::string &in);
 
-    Position* internalBoard;
+    Chess::Position* internalBoard;
     std::unordered_map<std::string, void(UCIHandler::*)(const std::string&)> commands;
 };
-
-inline std::vector<std::string> split(std::string string, char delimiter) {
-    std::stringstream stream(string);
-    std::vector<std::string> split;
-    std::string temp;
-
-    while (std::getline(stream, temp, delimiter)) { split.push_back(temp); }
-
-    return split;
-}

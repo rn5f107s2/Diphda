@@ -4,6 +4,8 @@
 #include "attacks.h"
 #include "types.h"
 
+namespace Chess {
+
 namespace Attacks {
 
 std::array<Bitboard, Square::COUNT> initJumperAttacks(Bitboard (*slowAttacks)(Square square));
@@ -231,10 +233,10 @@ std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> initMaskBB(bool e
             Bitboard occupied = extended ? 0 : Bitboard(sq1) | Bitboard(sq2);
             Bitboard mask     = 0;
 
-            if (::getBishopAttacks(sq1, occupied) & Bitboard(sq2))
-                mask = ::getBishopAttacks(sq1, occupied) & ::getBishopAttacks(sq2, occupied);
-            else if (::getRookAttacks(sq1, occupied) & Bitboard(sq2))
-                mask = ::getRookAttacks(sq1, occupied) & ::getRookAttacks(sq2, occupied);
+            if (Chess::getBishopAttacks(sq1, occupied) & Bitboard(sq2))
+                mask = Chess::getBishopAttacks(sq1, occupied) & Chess::getBishopAttacks(sq2, occupied);
+            else if (Chess::getRookAttacks(sq1, occupied) & Bitboard(sq2))
+                mask = Chess::getRookAttacks(sq1, occupied) & Chess::getRookAttacks(sq2, occupied);
 
             masksBB[sq1][sq2] = mask;
         }
@@ -243,4 +245,6 @@ std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> initMaskBB(bool e
     return masksBB;
 }
 
-}
+} // Namespace Attacks
+ 
+} // Namespace Chess

@@ -4,6 +4,8 @@
 #include <string> 
 #include <array>
 
+namespace Chess {
+
 using Bitboard = uint64_t;
 
 enum class PieceType : int8_t {
@@ -293,3 +295,5 @@ inline Square popLSB(Bitboard &bb) {
 
     return ret;
 }
+
+} // Namespace Chess

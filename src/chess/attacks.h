@@ -4,27 +4,31 @@
 
 #include <array>
 
+namespace Chess {
+
 namespace Attacks {
-    extern std::array<Bitboard, Square::NONE> knightAttacks;
-    extern std::array<Bitboard, Square::NONE> kingAttacks;
 
-    extern std::array<Bitboard, Square::COUNT> bishopMasks;
-    extern std::array<Bitboard, Square::COUNT> rookMasks;
+extern std::array<Bitboard, Square::NONE> knightAttacks;
+extern std::array<Bitboard, Square::NONE> kingAttacks;
 
-    extern std::array<int, Square::COUNT> bishopShifts;
-    extern std::array<int, Square::COUNT> rookShifts;
+extern std::array<Bitboard, Square::COUNT> bishopMasks;
+extern std::array<Bitboard, Square::COUNT> rookMasks;
 
-    extern std::array<std::array<Bitboard,  512>, Square::COUNT> bishopTable;
-    extern std::array<std::array<Bitboard, 4096>, Square::COUNT> rookTable;
+extern std::array<int, Square::COUNT> bishopShifts;
+extern std::array<int, Square::COUNT> rookShifts;
 
-    const extern std::array<uint64_t, Square::COUNT> bishopMagics;
-    const extern std::array<uint64_t, Square::COUNT> rookMagics;
+extern std::array<std::array<Bitboard,  512>, Square::COUNT> bishopTable;
+extern std::array<std::array<Bitboard, 4096>, Square::COUNT> rookTable;
 
-    extern std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> betweenBB;
-    extern std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> lineBB;
+const extern std::array<uint64_t, Square::COUNT> bishopMagics;
+const extern std::array<uint64_t, Square::COUNT> rookMagics;
 
-    void init();
-}
+extern std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> betweenBB;
+extern std::array<std::array<Bitboard, Square::COUNT>, Square::COUNT> lineBB;
+
+void init();
+
+} // Namespace Attacks
 
 inline Bitboard getPawnMoves(Square square, Bitboard occupied, Color color) {
     Rank doubleMoveRank = color == Color::WHITE ? Rank::RANK_2 : Rank::RANK_7;
@@ -102,3 +106,5 @@ inline Bitboard lineBB(Square sq1, Square sq2) {
 inline Bitboard betweenBB(Square sq1, Square sq2) {
     return Attacks::betweenBB[sq1][sq2];
 }
+
+} // Namespace Chess

@@ -7,7 +7,7 @@
 
 class MoveList {
 public:
-    void pushBack(Move move) {
+    void pushBack(Chess::Move move) {
         moves[position++] = move;
     }
 
@@ -24,6 +24,6 @@ public:
     }
 
 private:
-    std::array<Move, 256> moves;
+    std::array<Chess::Move, 256> moves;
     int position = 0;
 };

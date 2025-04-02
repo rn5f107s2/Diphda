@@ -4,7 +4,7 @@
 #include "chess/attacks.h"
 
 int main(int argc, char** argv) {
-    Attacks::init();
+    Chess::Attacks::init();
 
     UCIHandler* uci = new UCIHandler();
     uci->start(argc, argv);

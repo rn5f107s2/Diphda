@@ -3,6 +3,8 @@
 #include "attacks.h"
 #include "../movelist.h"
 
+namespace Chess {
+
 namespace Movegen {
 
 bool isPinned(const Position &pos, Square from, Square to) {
@@ -139,4 +141,6 @@ void generateMoves(const Position &pos, MoveList &ml) {
         generateCastling(pos, ml);
 }
 
-}
+} // Namespace Movegen
+
+} // Namespace Chess

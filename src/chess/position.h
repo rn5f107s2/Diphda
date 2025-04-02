@@ -9,6 +9,8 @@
 #include "attacks.h"
 #include "../movelist.h"
 
+namespace Chess {
+
 class Position {
 public:
     void setPosition(std::string fen);
@@ -162,10 +164,12 @@ inline void Position::generateMoves(MoveList &ml) {
     initPinnedPieces();
     initCheckers();
 
-    ::generateMoves(*this, ml);
+    Chess::generateMoves(*this, ml);
 }
 
 inline void Position::clear() {
     colors.fill(0);
     pieces.fill(0);
 }
+
+} // Namespace Chess

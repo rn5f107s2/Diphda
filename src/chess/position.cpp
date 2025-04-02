@@ -5,8 +5,9 @@
 
 #include "position.h"
 #include "attacks.h"
-#include "../uci.h"
+#include "../utility.h"
 
+namespace Chess {
 
 void Position::setPosition(std::string fen) {
     std::vector<std::string> splitFEN = split(fen, ' ');
@@ -174,3 +175,5 @@ std::string Position::toString() {
 
     return position + "\n";
 }
+
+} // Namespace Chess

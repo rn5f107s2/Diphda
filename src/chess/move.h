@@ -5,6 +5,8 @@
 
 #include "types.h"
 
+namespace Chess {
+
 class MoveType {
 public:
     enum Value {
@@ -98,3 +100,5 @@ private:
 
     int16_t data;
 };
+
+} // Namespace Chess
