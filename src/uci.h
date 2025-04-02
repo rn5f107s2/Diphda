@@ -20,6 +20,7 @@ public:
 
 private:
     void show(const std::string &arguments);
+    void perft(const std::string &argumetns);
     void position(const std::string &arguments);
 
     void loop();

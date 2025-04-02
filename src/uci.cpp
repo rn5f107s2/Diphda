@@ -3,6 +3,7 @@
 #include "uci.h"
 #include "utility.h"
 #include "chess/position.h"
+#include "perft.h"
 
 UCIHandler::UCIHandler() {
     internalBoard = new Chess::Position();
@@ -10,6 +11,7 @@ UCIHandler::UCIHandler() {
     internalBoard->setPosition(defaultFEN);
 
     commands["show"] = &UCIHandler::show;
+    commands["perft"] = &UCIHandler::perft;
     commands["position"] = &UCIHandler::position;
 } 
 
@@ -56,6 +58,14 @@ void UCIHandler::handleInput(const std::string &in) {
 
 void UCIHandler::show(const std::string &arguments) {
     std::cout << internalBoard->toString() << std::endl;
+}
+
+void UCIHandler::perft(const std::string &arguments) {
+    std::vector<std::string> splitArguments = split(arguments, ' ');
+
+    int depth = std::stoi(splitArguments.at(0));
+
+    ::perft<true>(*internalBoard, depth);
 }
 
 void UCIHandler::position(const std::string &arguments) {

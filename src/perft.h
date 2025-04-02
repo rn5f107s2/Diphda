@@ -3,9 +3,11 @@
 #include <cstdint>
 
 #include "chess/position.h"
+#include "chess/move.h"
+#include "movelist.h"
 
 template<bool ROOT>
-uint64_t perft(Position &pos, int depth) {
+uint64_t perft(Chess::Position &pos, int depth) {
     if (depth <= 0)
         return 1;
 
@@ -16,8 +18,8 @@ uint64_t perft(Position &pos, int depth) {
 
     uint64_t nodeCount = 0;
 
-    for (Move move : ml) {
-        Position pos2 = pos;
+    for (Chess::Move move : ml) {
+        Chess::Position pos2 = pos;
 
         pos2.makeMove(move);
 
