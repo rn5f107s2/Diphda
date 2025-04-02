@@ -8,7 +8,7 @@
 UCIHandler::UCIHandler() {
     internalBoard = new Position();
 
-    internalBoard->setPosition(defaultFEN);
+    internalBoard->setStartpos();
 
     commands["show"] = &UCIHandler::show;
     commands["perft"] = &UCIHandler::perft;

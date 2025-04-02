@@ -9,7 +9,6 @@
 
 static const std::string name       = "Diphda";
 static const std::string version    = "0.1";
-static const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 class UCIHandler {
 public:

@@ -13,6 +13,7 @@ namespace Chess {
 
 class Position {
 public:
+    void setStartpos();
     void setPosition(std::string fen);
 
     template<PieceType TYPE>

@@ -9,6 +9,10 @@
 
 namespace Chess {
 
+void Position::setStartpos() {
+    setPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+}
+
 void Position::setPosition(std::string fen) {
     std::vector<std::string> splitFEN = split(fen, ' ');
 
