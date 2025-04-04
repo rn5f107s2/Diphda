@@ -3,7 +3,7 @@
 #include "uci.h"
 #include "utility.h"
 #include "perft.h"
-#include "game/game.h"
+#include "games/game.h"
 
 UCIHandler::UCIHandler() {
     internalBoard = new Position();

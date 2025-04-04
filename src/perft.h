@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "game/game.h"
+#include "games/game.h"
 #include "movelist.h"
 
 template<bool ROOT>

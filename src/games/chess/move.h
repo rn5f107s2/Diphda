@@ -55,6 +55,8 @@ constexpr PromotionPiece& operator--(PromotionPiece &piece) { return piece = Pro
 
 class Move {
 public:
+    constexpr static int MAX_LEGAL = 256;
+
     Move() = default;
 
     Move(Square from, Square to, MoveType type = MoveType::NORMAL, PromotionPiece promo = PromotionPiece::NONE) {
@@ -80,7 +82,7 @@ public:
         return PromotionPiece((data >> 14) & TWO_BITS);
     }
 
-    constexpr Move& operator=(Move &other) {
+    Move& operator=(Move other) {
         data = other.data;
 
         return *this;

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <array>
 
-#include "game/gamemove.h"
+#include "games/gamemove.h"
 
 class MoveList {
 public:
@@ -23,7 +23,9 @@ public:
         return position;
     }
 
+    Move operator[](int i) { return moves[i]; }
+
 private:
-    std::array<Move, 256> moves;
+    std::array<Move, Move::MAX_LEGAL> moves;
     int position = 0;
 };

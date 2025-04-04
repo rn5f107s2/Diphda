@@ -5,7 +5,7 @@
 #include <sstream>
 #include <unordered_map>
 
-#include "game/game.h"
+#include "games/game.h"
 
 static const std::string name       = "Diphda";
 static const std::string version    = "0.1";
