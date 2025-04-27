@@ -7,15 +7,13 @@ __global__ void fcfwbatched(int batchSize, int in, int out, float* input, float*
     int batch    = threadId / out;
     int idx      = threadId % out;
 
-    int batchOffset = batch * batchSize;
-
     if (batch >= batchSize)
         return;
 
-    output[batchOffset + idx] = biases[idx];
+    output[batch * out + idx] = biases[idx];
 
     for (int i = 0; i < in; i++)
-        output[batchOffset + idx] += weights[i * out + idx] * input[batchOffset + i];
+        output[batch * out + idx] += weights[i * out + idx] * input[batch * in + i];
 }
 
 __global__ void fcfwrelubatched(int batchSize, int in, int out, float* input, float* output, float* weights, float* biases) {
@@ -23,18 +21,16 @@ __global__ void fcfwrelubatched(int batchSize, int in, int out, float* input, fl
     int batch    = threadId / out;
     int idx      = threadId % out;
 
-    int batchOffset = batch * batchSize;
-
     if (batch >= batchSize)
         return;
 
-    output[batchOffset + idx] = biases[idx];
+    output[batch * out + idx] = biases[idx];
 
     for (int i = 0; i < in; i++)
-        output[batchOffset + idx] += weights[i * out + idx] * input[batchOffset + i];
+        output[batch * out + idx] += weights[i * out + idx] * input[batch * in + i];
 
-    if (output[batchOffset + idx] < 0)
-        output[batchOffset + idx] = 0;
+    if (output[batch * out + idx] < 0)
+        output[batch * out + idx] = 0;
 }
 
 CudaNetwork::CudaNetwork(int bs, float* policyWeights, float* valueWeights) : batchSize(bs) {
@@ -58,7 +54,7 @@ CudaNetwork::CudaNetwork(int bs, float* policyWeights, float* valueWeights) : ba
 void CudaNetwork::forward(float* input, float* valueOutput, float* policyOutput) {
     const int threads = 256;
 
-    cudaMemcpy(d_input, input, 768 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_input, input, 768 * batchSize * sizeof(float), cudaMemcpyHostToDevice);
 
     {
         int blocks = (batchSize * valueLayer1Size + threads - 1) / threads;
@@ -99,8 +95,6 @@ void CudaNetwork::forward(float* input, float* valueOutput, float* policyOutput)
     }
 
     cudaDeviceSynchronize();
-
-    std::cout << batchSize << std::endl;
 
     cudaMemcpy(valueOutput , d_valueOutput , batchSize *    3 * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(policyOutput, d_policyOutput, batchSize * 4096 * sizeof(float), cudaMemcpyDeviceToHost);

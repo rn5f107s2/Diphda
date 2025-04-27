@@ -33,17 +33,12 @@ public:
     }
 
     void forward() {
-        float* input = (float*) malloc(2 * 768 * sizeof(float));
+        float* input = (float*) malloc(batchSize * 768 * sizeof(float));
 
         for (int i = 0; i < 768; i++)
             input[i] = float(rand()) / float(RAND_MAX);
 
-        memcpy(&input[768], input, 768 * sizeof(float));
-
         cudaNetwork->forward(input, valueOutputBatched, policyOutputBatched);
-
-        for (int i = 0; i < 6; i++)
-            std::cout << valueOutputBatched[i] << std::endl;
     }
 
     float* getPolicy(int batchIdx) {
