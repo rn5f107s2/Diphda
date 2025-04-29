@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 #include "network.h"
 
@@ -14,6 +15,29 @@ __global__ void fcfwbatched(int batchSize, int in, int out, float* input, float*
 
     for (int i = 0; i < in; i++)
         output[batch * out + idx] += weights[i * out + idx] * input[batch * in + i];
+}
+
+__global__ void fcfwbatchedrelusparsein(int batchSize, int* in, int nIn, int inSize, int out, float* input, float* output, float* weights, float* biases) {
+    int threadId = blockDim.x * blockIdx.x + threadIdx.x;
+    int batch    = threadId / out;
+    int idx = threadId % out;
+
+    if (batch >= batchSize)
+        return;
+
+    output[batch * out + idx] = biases[idx];
+
+    for (int i = 0; i < nIn; i++) {
+        int inIdx = in[i];
+
+        if (inIdx == -1)
+            break;
+
+        output[batch * out + idx] += weights[inIdx * out + idx] * input[batch * inSize + inIdx];
+    }
+
+    if (output[batch * out + idx] < 0)
+        output[batch * out + idx] = 0;
 }
 
 __global__ void fcfwbatchedsparseout(int batchSize, int in, int* out, int nOut, int outSize, float* input, float* output, float* weights, float* biases) {
@@ -61,7 +85,8 @@ CudaNetwork::CudaNetwork(int bs, float* policyWeights, float* valueWeights) : ba
     cudaMalloc(&d_valueIntermediate , batchSize * valueLayer1Size  * sizeof(float));
     cudaMalloc(&d_policyIntermediate, batchSize * policyLayer1Size * sizeof(float));
 
-    cudaMalloc(&d_policyOutIndices, batchSize * maxMoves * sizeof(int));
+    cudaMalloc(&d_policyOutIndices, batchSize * maxMoves  * sizeof(int));
+    cudaMalloc(&d_inputIndices    , batchSize * maxInputs * sizeof(int));
 
     int nValueWeights  = 768 * valueLayer1Size  + valueLayer1Size  + valueLayer1Size  * valueLayer2Size  + valueLayer2Size;
     int nPolicyWeights = 768 * policyLayer1Size + policyLayer1Size + policyLayer1Size * policyLayer2Size + policyLayer2Size;
@@ -73,32 +98,36 @@ CudaNetwork::CudaNetwork(int bs, float* policyWeights, float* valueWeights) : ba
     cudaMemcpy(d_policyWeights, policyWeights, nPolicyWeights * sizeof(float), cudaMemcpyHostToDevice);
 }
 
-void CudaNetwork::forward(float* input, int* policyOutputIndices, float* valueOutput, float* policyOutput) {
+void CudaNetwork::forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput) {
     const int threads = 256;
 
-    cudaMemcpy(d_input, input, 768 * batchSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_policyOutIndices, policyOutputIndices, maxMoves * batchSize * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_inputIndices    , inputIndices       , maxInputs * batchSize * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_policyOutIndices, policyOutputIndices, maxMoves  * batchSize * sizeof(int), cudaMemcpyHostToDevice);
 
     {
         int blocks = (batchSize * valueLayer1Size + threads - 1) / threads;
-        fcfwrelubatched<<<blocks, threads>>>(batchSize, 
-                                             768, 
-                                             valueLayer1Size, 
-                                             d_input, 
-                                             d_valueIntermediate, 
-                                             &d_valueWeights[0], 
-                                             &d_valueWeights[768 * valueLayer1Size]);
+        fcfwbatchedrelusparsein<<<blocks, threads>>>(batchSize,
+                                                     d_inputIndices,
+                                                     maxInputs,
+                                                     768, 
+                                                     valueLayer1Size, 
+                                                     d_input, 
+                                                     d_valueIntermediate, 
+                                                     &d_valueWeights[0], 
+                                                     &d_valueWeights[768 * valueLayer1Size]);
     }
 
     {
         int blocks = (batchSize * policyLayer1Size + threads - 1) / threads;
-        fcfwrelubatched<<<blocks, threads>>>(batchSize, 
-                                             768, 
-                                             policyLayer1Size, 
-                                             d_input, 
-                                             d_policyIntermediate, 
-                                             &d_policyWeights[0], 
-                                             &d_policyWeights[768 * policyLayer1Size]);
+        fcfwbatchedrelusparsein<<<blocks, threads>>>(batchSize, 
+                                                     d_inputIndices,
+                                                     maxInputs,
+                                                     768, 
+                                                     policyLayer1Size, 
+                                                     d_input, 
+                                                     d_policyIntermediate, 
+                                                     &d_policyWeights[0], 
+                                                     &d_policyWeights[768 * policyLayer1Size]);
     }
 
     cudaDeviceSynchronize();

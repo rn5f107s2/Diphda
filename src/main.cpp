@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
 
     Network* n = new Network();
     n->loadWeights("/dev/urandom");
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 50; i++) {
     std::cout << "Starting!" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     n->forward();
