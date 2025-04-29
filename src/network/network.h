@@ -19,7 +19,7 @@ struct CudaNetwork {
     const int maxMoves  = 218;
     const int maxInputs = 32;
 
-    float *d_input, *d_policyOutput, *d_valueOutput;
+    float *d_policyOutput, *d_valueOutput;
     float *d_valueIntermediate, *d_policyIntermediate;
     float *d_policyWeights;
     float *d_valueWeights;
@@ -39,13 +39,13 @@ public:
     }
 
     void forward() {
-        int* input = (int*) malloc(batchSize * 768 * sizeof(int));
+        int* input = (int*) malloc(batchSize * 32 * sizeof(int));
 
         for (int i = 0; i < 32 * batchSize; i++) {
             int r     = (float(rand()) / float(RAND_MAX)) * 768;
-            int batch = i % 32;
+            int batch = i / 32;
 
-            input[r + batch * 768]  = 1;
+            input[(i % 32) + batch * 32] = r;
         }
 
         int* policyOutputIndices = (int*) malloc(sizeof(int) * batchSize * 218);
@@ -58,6 +58,9 @@ public:
             memcpy(&policyOutputIndices[218 * i], policyOutputIndices, sizeof(int) * 218);
 
         cudaNetwork->forward(input, policyOutputIndices, valueOutputBatched, policyOutputBatched);
+
+        for (int i = 0; i < 3; i++)
+            std::cout << valueOutputBatched[i] << " " << valueOutputBatched[i + 1] << " " << valueOutputBatched[i + 2] << std::endl;
 
         free(input);
         free(policyOutputIndices);

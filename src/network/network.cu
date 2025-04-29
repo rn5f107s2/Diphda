@@ -17,7 +17,7 @@ __global__ void fcfwbatched(int batchSize, int in, int out, float* input, float*
         output[batch * out + idx] += weights[i * out + idx] * input[batch * in + i];
 }
 
-__global__ void fcfwbatchedrelusparsein(int batchSize, int* in, int nIn, int inSize, int out, float* input, float* output, float* weights, float* biases) {
+__global__ void fcfwbatchedrelusparsein(int batchSize, int* in, int nIn, int inSize, int out, float* output, float* weights, float* biases) {
     int threadId = blockDim.x * blockIdx.x + threadIdx.x;
     int batch    = threadId / out;
     int idx = threadId % out;
@@ -33,7 +33,7 @@ __global__ void fcfwbatchedrelusparsein(int batchSize, int* in, int nIn, int inS
         if (inIdx == -1)
             break;
 
-        output[batch * out + idx] += weights[inIdx * out + idx] * input[batch * inSize + inIdx];
+        output[batch * out + idx] += weights[inIdx * out + idx];
     }
 
     if (output[batch * out + idx] < 0)
@@ -79,7 +79,6 @@ __global__ void fcfwrelubatched(int batchSize, int in, int out, float* input, fl
 
 CudaNetwork::CudaNetwork(int bs, float* policyWeights, float* valueWeights) : batchSize(bs) {
     cudaMalloc(&d_valueOutput , batchSize *    3 * sizeof(float));
-    cudaMalloc(&d_input       , batchSize *  768 * sizeof(float));
     cudaMalloc(&d_policyOutput, batchSize * 4096 * sizeof(float));
 
     cudaMalloc(&d_valueIntermediate , batchSize * valueLayer1Size  * sizeof(float));
@@ -111,7 +110,6 @@ void CudaNetwork::forward(int* inputIndices, int* policyOutputIndices, float* va
                                                      maxInputs,
                                                      768, 
                                                      valueLayer1Size, 
-                                                     d_input, 
                                                      d_valueIntermediate, 
                                                      &d_valueWeights[0], 
                                                      &d_valueWeights[768 * valueLayer1Size]);
@@ -124,7 +122,6 @@ void CudaNetwork::forward(int* inputIndices, int* policyOutputIndices, float* va
                                                      maxInputs,
                                                      768, 
                                                      policyLayer1Size, 
-                                                     d_input, 
                                                      d_policyIntermediate, 
                                                      &d_policyWeights[0], 
                                                      &d_policyWeights[768 * policyLayer1Size]);
