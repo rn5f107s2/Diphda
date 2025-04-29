@@ -41,11 +41,19 @@ public:
     void forward() {
         int* input = (int*) malloc(batchSize * 32 * sizeof(int));
 
+        bool used[768];
+
         for (int i = 0; i < 32 * batchSize; i++) {
+            if (i % 32 == 0)
+                memset(used, 0, 768);
+
             int r     = (float(rand()) / float(RAND_MAX)) * 768;
             int batch = i / 32;
 
-            input[(i % 32) + batch * 32] = r;
+            if (!used[r])
+                input[(i % 32) + batch * 32] = r;
+
+            used[r] = true;
         }
 
         int* policyOutputIndices = (int*) malloc(sizeof(int) * batchSize * 218);
@@ -58,9 +66,6 @@ public:
             memcpy(&policyOutputIndices[218 * i], policyOutputIndices, sizeof(int) * 218);
 
         cudaNetwork->forward(input, policyOutputIndices, valueOutputBatched, policyOutputBatched);
-
-        for (int i = 0; i < 3; i++)
-            std::cout << valueOutputBatched[i] << " " << valueOutputBatched[i + 1] << " " << valueOutputBatched[i + 2] << std::endl;
 
         free(input);
         free(policyOutputIndices);
