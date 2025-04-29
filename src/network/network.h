@@ -13,7 +13,7 @@ struct CudaNetwork {
     const int valueLayer1Size = 1024;
     const int valueLayer2Size = 3;
 
-    const int policyLayer1Size = 256;
+    const int policyLayer1Size = 512;
     const int policyLayer2Size = 4096;
 
     const int maxMoves  = 218;
@@ -34,7 +34,7 @@ struct CudaNetwork {
 class Network {
 public:
     Network() {
-        policyOutputBatched = (float*) malloc(sizeof(float) * policyLayer2Size * batchSize);
+        policyOutputBatched = (float*) malloc(sizeof(float) * 218              * batchSize);
         valueOutputBatched  = (float*) malloc(sizeof(float) * valueLayer2Size  * batchSize);
     }
 
@@ -67,12 +67,13 @@ public:
 
         cudaNetwork->forward(input, policyOutputIndices, valueOutputBatched, policyOutputBatched);
 
+
         free(input);
         free(policyOutputIndices);
     }
 
     float* getPolicy(int batchIdx) {
-        return &policyOutputBatched[policyLayer2Size * batchIdx];
+        return &policyOutputBatched[218 * batchIdx];
     }
 
     float* getValue(int batchIdx) {
