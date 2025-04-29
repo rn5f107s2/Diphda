@@ -16,13 +16,17 @@ struct CudaNetwork {
     const int policyLayer1Size = 512;
     const int policyLayer2Size = 4096;
 
+    const int maxMoves = 218;
+
     float *d_input, *d_policyOutput, *d_valueOutput;
     float *d_valueIntermediate, *d_policyIntermediate;
     float *d_policyWeights;
     float *d_valueWeights;
+    
+    int* d_policyOutIndices;
 
     CudaNetwork(int batchSize, float* policyWeights, float* valueWeights);
-    void forward(float* input, float* valueOutput, float* policyOutput);
+    void forward(float* input, int* policyOutputIndices, float* valueOutput, float* policyOutput);
 };
 
 class Network {
@@ -35,17 +39,32 @@ public:
     void forward() {
         float* input = (float*) malloc(batchSize * 768 * sizeof(float));
 
-        for (int i = 0; i < 768; i++)
+        for (int i = 0; i < 768 * batchSize; i++)
             input[i] = float(rand()) / float(RAND_MAX);
 
-        cudaNetwork->forward(input, valueOutputBatched, policyOutputBatched);
+        int* policyOutputIndices = (int*) malloc(sizeof(int) * batchSize * 218);
+        memset(policyOutputIndices, -1, sizeof(int) * 218);
+        policyOutputIndices[0] = 215;
+        policyOutputIndices[1] = 4032;
+        policyOutputIndices[2] = 1045;
+
+        for (int i = 1; i < batchSize; i++)
+            memcpy(&policyOutputIndices[218 * i], policyOutputIndices, sizeof(int) * 218);
+
+        cudaNetwork->forward(input, policyOutputIndices, valueOutputBatched, policyOutputBatched);
+
+        std::cout << policyOutputBatched[215 ] << " " << policyOutputBatched[215  + policyLayer2Size] << " " << policyOutputBatched[215  + 2 * policyLayer2Size] << std::endl;
+        std::cout << policyOutputBatched[4032] << " " << policyOutputBatched[4032 + policyLayer2Size] << " " << policyOutputBatched[4032 + 2 * policyLayer2Size] << std::endl;
+        std::cout << policyOutputBatched[1045] << " " << policyOutputBatched[1045 + policyLayer2Size] << " " << policyOutputBatched[1045 + 2 * policyLayer2Size] << std::endl;
+
+        free(input);
     }
 
     float* getPolicy(int batchIdx) {
         return &policyOutputBatched[policyLayer2Size * batchIdx];
     }
 
-    float* getVaue(int batchIdx) {
+    float* getValue(int batchIdx) {
         return &valueOutputBatched[valueLayer2Size * batchIdx];
     }
 
@@ -77,7 +96,7 @@ public:
     }
 
 private:
-    const int batchSize = 1;
+    const int batchSize = 3;
 
     float* policyOutputBatched, *valueOutputBatched;
 
