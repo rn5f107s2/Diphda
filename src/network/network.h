@@ -33,43 +33,13 @@ struct CudaNetwork {
 
 class Network {
 public:
-    Network() {
+    Network(int bs) : batchSize(bs) {
         policyOutputBatched = (float*) malloc(sizeof(float) * 218              * batchSize);
         valueOutputBatched  = (float*) malloc(sizeof(float) * valueLayer2Size  * batchSize);
     }
 
-    void forward() {
-        int* input = (int*) malloc(batchSize * 32 * sizeof(int));
-
-        bool used[768];
-
-        for (int i = 0; i < 32 * batchSize; i++) {
-            if (i % 32 == 0)
-                memset(used, 0, 768);
-
-            int r     = (float(rand()) / float(RAND_MAX)) * 768;
-            int batch = i / 32;
-
-            if (!used[r])
-                input[(i % 32) + batch * 32] = r;
-
-            used[r] = true;
-        }
-
-        int* policyOutputIndices = (int*) malloc(sizeof(int) * batchSize * 218);
-        memset(policyOutputIndices, -1, sizeof(int) * 218);
-        policyOutputIndices[0] = 215;
-        policyOutputIndices[1] = 4032;
-        policyOutputIndices[2] = 1045;
-
-        for (int i = 1; i < batchSize; i++)
-            memcpy(&policyOutputIndices[218 * i], policyOutputIndices, sizeof(int) * 218);
-
-        cudaNetwork->forward(input, policyOutputIndices, valueOutputBatched, policyOutputBatched);
-
-
-        free(input);
-        free(policyOutputIndices);
+    void forward(int* inputIndices, int* policyOutputIndices) {
+        cudaNetwork->forward(inputIndices, policyOutputIndices, valueOutputBatched, policyOutputBatched);
     }
 
     float* getPolicy(int batchIdx) {
@@ -92,12 +62,6 @@ public:
         weights.read((char*) valueWeights , nValueWeights  * sizeof(float));
         weights.read((char*) policyWeights, nPolicyWeights * sizeof(float));
 
-        for (int i = 0; i < nValueWeights; i++)
-            valueWeights[i] = float(rand()) / float(RAND_MAX);
-
-        for (int i = 0; i < nPolicyWeights; i++)
-            policyWeights[i] = float(rand()) / float(RAND_MAX);
-
         if (cudaNetwork)
             delete cudaNetwork;
 
@@ -108,7 +72,7 @@ public:
     }
 
 private:
-    const int batchSize = 2 << 16;
+    const int batchSize;
 
     float* policyOutputBatched, *valueOutputBatched;
 

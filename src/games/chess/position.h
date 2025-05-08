@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <cstring>
 
 #include "types.h"
 #include "move.h"
@@ -36,6 +37,9 @@ public:
     void generateMoves(MoveList &ml);
 
     void makeMove(Move move);
+
+    int  indexOf(Move move);
+    void toChess768Dense(int* indices);
 
     std::string toString();
 
@@ -171,6 +175,32 @@ inline void Position::generateMoves(MoveList &ml) {
 inline void Position::clear() {
     colors.fill(0);
     pieces.fill(0);
+}
+
+inline int Position::indexOf(Move move) {
+    return move.getFrom() * 64 + move.getTo();
+}
+
+inline void Position::toChess768Dense(int* indices) {
+    int idx = 0;
+
+    for (Color c : {sideToMove, ~sideToMove}) {
+        for (PieceType pt = PieceType::PAWN; pt != PieceType::NO_TYPE; ++pt) {
+            Bitboard pieces = getPieces(c) & getPieces(pt);
+
+            while (pieces) {
+                int square = popLSB(pieces);
+                Piece relativePiece = Piece(c == sideToMove ? Color::WHITE : Color::BLACK, pt);
+
+                if (sideToMove == Color::BLACK)
+                    square ^= 56;
+
+                indices[idx++] = 64 * relativePiece + square;
+            }
+        }
+    }
+
+    memset(indices + idx, -1, (32 - idx) * sizeof(int));
 }
 
 } // Namespace Chess

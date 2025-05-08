@@ -82,7 +82,7 @@ public:
         return PromotionPiece((data >> 14) & TWO_BITS);
     }
 
-    Move& operator=(Move other) {
+    const Move& operator=(Move other) {
         data = other.data;
 
         return *this;
@@ -97,8 +97,8 @@ public:
     }
 
 private:
-    const int SIX_BITS = 0b111111;
-    const int TWO_BITS = 0b11;
+    static const int SIX_BITS = 0b111111;
+    static const int TWO_BITS = 0b11;
 
     int16_t data;
 };

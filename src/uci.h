@@ -17,8 +17,11 @@ public:
     UCIHandler();
 
 private:
+    void go(const std::string &arguments);
+    void uci(const std::string &arguments);
     void show(const std::string &arguments);
     void perft(const std::string &argumetns);
+    void isready(const std::string &arguments);
     void position(const std::string &arguments);
 
     void loop();
