@@ -90,7 +90,7 @@ void Node::rollout(Position& pos) {
     if (terminal)
         return backpropagate(won ? -1.0 : (drawn ? 0.0 : 1.0));
 
-    return backpropagate((double(rand()) / double(RAND_MAX)) * 2. - 1.0);
+    backpropagate(-pos.simpleQ());
 }
 
 void Node::expand(Position& pos) {

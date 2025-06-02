@@ -3,6 +3,7 @@
 #include <array>
 #include <string>
 #include <cstring>
+#include <cmath>
 
 #include "types.h"
 #include "move.h"
@@ -44,6 +45,8 @@ public:
     bool isWon();
     bool isDrawn();
     bool isLost();
+
+    double simpleQ();
 
     std::string toString();
 
@@ -190,6 +193,18 @@ inline bool Position::isDrawn() {
 
 inline bool Position::isLost() {
     return !legalMoves && checkers;
+}
+
+inline double Position::simpleQ() {
+    double score = 0;
+    double values[5] = { 0.1, 0.3, 0.3, 0.5, 0.9 };
+
+    for (PieceType pt = PieceType::PAWN; pt < PieceType::KING; ++pt) {
+        score += __builtin_popcountll(pieces[int(pt)] & colors[int( sideToMove)]) * values[int(pt)];
+        score -= __builtin_popcountll(pieces[int(pt)] & colors[int(~sideToMove)]) * values[int(pt)];
+    }
+
+    return std::tanh(score);
 }
 
 inline void Position::clear() {
