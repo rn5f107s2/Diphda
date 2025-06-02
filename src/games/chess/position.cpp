@@ -118,6 +118,8 @@ void Position::makeMove(Move move) {
     addPiece(movedPiece, to);
 
     sideToMove = ~sideToMove;
+
+    legalMoves = -1;
 }
 
 void Position::initPinnedPieces() {

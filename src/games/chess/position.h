@@ -41,6 +41,10 @@ public:
     int  indexOf(Move move);
     void toChess768Dense(int* indices);
 
+    bool isWon();
+    bool isDrawn();
+    bool isLost();
+
     std::string toString();
 
     Position() {
@@ -57,6 +61,8 @@ private:
 
     Bitboard pinnedPieces;
     Bitboard checkers;
+
+    int legalMoves;
 
     void parsePieces(std::string piecesFen);
     void parseSideToMove(std::string stmFen);
@@ -170,11 +176,27 @@ inline void Position::generateMoves(MoveList &ml) {
     initCheckers();
 
     Chess::generateMoves(*this, ml);
+
+    legalMoves = ml.length();
+}
+
+inline bool Position::isWon() {
+    return false;
+}
+
+inline bool Position::isDrawn() {
+    return !legalMoves && !checkers;
+}
+
+inline bool Position::isLost() {
+    return !legalMoves && checkers;
 }
 
 inline void Position::clear() {
     colors.fill(0);
     pieces.fill(0);
+
+    legalMoves = -1;
 }
 
 inline int Position::indexOf(Move move) {
