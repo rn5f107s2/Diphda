@@ -5,6 +5,7 @@
 
 #include "position.h"
 #include "attacks.h"
+#include "zobrist.h"
 #include "../../utility.h"
 
 namespace Chess {
@@ -21,6 +22,8 @@ void Position::setPosition(std::string fen) {
     parsePieces(splitFEN.at(0));
     parseSideToMove(splitFEN.at(1));
     parseCastling(splitFEN.at(2));
+
+    repetitionHistory.push_back(key);
 }
 
 void Position::parsePieces(std::string piecesFen) {
@@ -46,6 +49,9 @@ void Position::parsePieces(std::string piecesFen) {
 
 void Position::parseSideToMove(std::string stmFen) {
     sideToMove = stmFen.at(0) == 'b' ? Color::BLACK : Color::WHITE;
+
+    if (sideToMove == Color::BLACK)
+        key ^= Zobrist::STM;
 }
 
 void Position::parseCastling(std::string castlingFen) {
@@ -53,10 +59,10 @@ void Position::parseCastling(std::string castlingFen) {
 
     for (char c : castlingFen) {
         switch (c) {
-            case 'K': castlingRights.set(CastlingRights::WHITE_KINGSIDE); break;
-            case 'Q': castlingRights.set(CastlingRights::WHITE_QUEENSIDE); break;
-            case 'k': castlingRights.set(CastlingRights::BLACK_KINGSIDE); break;
-            case 'q': castlingRights.set(CastlingRights::BLACK_QUEENSIDE); break;
+            case 'K': castlingRights.set(CastlingRights::WHITE_KINGSIDE ); key ^= Zobrist::CASTLING[CastlingRights::WHITE_KINGSIDE ]; break;
+            case 'Q': castlingRights.set(CastlingRights::WHITE_QUEENSIDE); key ^= Zobrist::CASTLING[CastlingRights::WHITE_QUEENSIDE]; break;
+            case 'k': castlingRights.set(CastlingRights::BLACK_KINGSIDE ); key ^= Zobrist::CASTLING[CastlingRights::BLACK_KINGSIDE ]; break;
+            case 'q': castlingRights.set(CastlingRights::BLACK_QUEENSIDE); key ^= Zobrist::CASTLING[CastlingRights::BLACK_QUEENSIDE]; break;
         }
     }
 }
@@ -66,6 +72,8 @@ void Position::addPiece(Piece piece, Square square) {
 
     pieces[int(piece.getType()) ] ^= bb;
     colors[int(piece.getColor())] ^= bb;
+
+    key ^= Zobrist::PSQT[piece * 64 + square];
 }
 
 void Position::removePiece(Piece piece, Square square) {
@@ -73,6 +81,8 @@ void Position::removePiece(Piece piece, Square square) {
 
     pieces[int(piece.getType()) ] ^= bb;
     colors[int(piece.getColor())] ^= bb;
+
+    key ^= Zobrist::PSQT[piece * 64 + square];
 }
 
 void Position::makeMove(Move move) {
@@ -83,25 +93,37 @@ void Position::makeMove(Move move) {
     Piece movedPiece = getPieceOn(from);
     Piece captured   = getPieceOn(to);
 
-    castlingRights.updateCastlingRights(from);
-    castlingRights.updateCastlingRights(to);
+    fiftyMoveRule++;
+
+    key ^= castlingRights.updateCastlingRights(from);
+    key ^= castlingRights.updateCastlingRights(to);
 
     removePiece(movedPiece, from);
 
-    if (captured != Piece::NONE)
+    if (captured != Piece::NONE) {
         removePiece(captured, to);
+        fiftyMoveRule = 0;
+    }
 
     if (type == MoveType::EN_PASSANT)
         removePiece(Piece(~sideToMove, PieceType::PAWN), Square(to.getFile(), from.getRank()));
 
+    if (enPassantSquare != Square::NONE)
+        key ^= Zobrist::EP[enPassantSquare.getFile()];
+
     enPassantSquare = Square::NONE;
 
-    if (   movedPiece.getType() == PieceType::PAWN
-        && abs(from - to) == 16)
-        enPassantSquare = Square((from + to) >> 1);
+    if (movedPiece.getType() == PieceType::PAWN) {
+        fiftyMoveRule = 0;
 
-    if (type == MoveType::PROMO)
-        movedPiece = Piece(sideToMove, move.getPromo().getType());
+        if (abs(from - to) == 16) {
+            enPassantSquare = Square((from + to) >> 1);
+            key ^= Zobrist::EP[enPassantSquare.getFile()];
+        }
+
+        if (type == MoveType::PROMO)
+            movedPiece = Piece(sideToMove, move.getPromo().getType());
+    }
 
     if (type == MoveType::CASTLING) {
         Rank backRank = sideToMove == Color::WHITE ? Rank::RANK_1 : Rank::RANK_8;
@@ -118,8 +140,11 @@ void Position::makeMove(Move move) {
     addPiece(movedPiece, to);
 
     sideToMove = ~sideToMove;
+    key ^= Zobrist::STM;
 
     legalMoves = -1;
+
+    repetitionHistory.push_back(key);
 }
 
 void Position::initPinnedPieces() {
@@ -141,6 +166,20 @@ void Position::initPinnedPieces() {
         if (!multipleBits(pinnedLine))
             pinnedPieces |= pinnedLine;
     }
+}
+
+bool Position::hasRepeated() {
+    int currentIdx  = repetitionHistory.size() - 1;
+    int repetitions = 0;
+    uint64_t currentKey = repetitionHistory.back();
+
+    for (int idx = currentIdx - 2; idx >= currentIdx - fiftyMoveRule; idx -= 2) {
+        if(repetitionHistory[idx] == currentKey && ++repetitions > 1)
+            return true;
+
+    }
+
+    return false;
 }
 
 void Position::initCheckers() {

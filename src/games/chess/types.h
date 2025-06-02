@@ -4,6 +4,8 @@
 #include <string> 
 #include <array>
 
+#include "zobrist.h"
+
 namespace Chess {
 
 using Bitboard = uint64_t;
@@ -238,7 +240,7 @@ class CastlingRights {
 public:
     enum Value {
         WHITE_KINGSIDE, WHITE_QUEENSIDE, 
-        BLACK_KINGSIDE, BLACK_QUEENSIDE
+        BLACK_KINGSIDE, BLACK_QUEENSIDE,
     };
 
     constexpr CastlingRights() : raw(0b00001111) {}
@@ -251,8 +253,14 @@ public:
         return Value((side == Color::BLACK) * 2 + queenSide);
     }
 
-    constexpr void updateCastlingRights(Square movedSquare) {
+    constexpr uint64_t updateCastlingRights(Square movedSquare) {
+        uint8_t old = raw;
+
         raw &= ~castlingMasks[movedSquare];
+
+        uint8_t change = old ^ raw;
+
+        return keyChanges[change];
     }
 
     constexpr void reset() {
@@ -276,6 +284,20 @@ private:
         0, 0, 0,  0, 0, 0, 0, 0,
         4, 0, 0, 12, 0, 0, 0, 8
     };
+            
+    const uint64_t keyChanges[13] = { 0, 
+                                      Zobrist::CASTLING[WHITE_KINGSIDE], 
+                                      Zobrist::CASTLING[WHITE_QUEENSIDE], 
+                                      Zobrist::CASTLING[WHITE_KINGSIDE] ^ Zobrist::CASTLING[WHITE_QUEENSIDE], 
+                                      Zobrist::CASTLING[BLACK_KINGSIDE], 
+                                      0, 
+                                      0, 
+                                      0, 
+                                      Zobrist::CASTLING[BLACK_QUEENSIDE], 
+                                      0, 
+                                      0, 
+                                      0, 
+                                      Zobrist::CASTLING[BLACK_KINGSIDE] ^ Zobrist::CASTLING[BLACK_QUEENSIDE] };
 
     uint8_t raw;
 };

@@ -4,6 +4,7 @@
 #include <string>
 #include <cstring>
 #include <cmath>
+#include <vector>
 
 #include "types.h"
 #include "move.h"
@@ -65,6 +66,12 @@ private:
     Bitboard pinnedPieces;
     Bitboard checkers;
 
+    std::vector<uint64_t> repetitionHistory;
+
+    int fiftyMoveRule;
+
+    uint64_t key;
+
     int legalMoves;
 
     void parsePieces(std::string piecesFen);
@@ -77,6 +84,8 @@ private:
 
     void initPinnedPieces();
     void initCheckers();
+
+    bool hasRepeated();
 
     Bitboard attackersTo(Square square);
 
@@ -188,7 +197,13 @@ inline bool Position::isWon() {
 }
 
 inline bool Position::isDrawn() {
-    return !legalMoves && !checkers;
+    if (!legalMoves && !checkers)
+        return true;
+
+    if (fiftyMoveRule >= 100 && !isLost())
+        return true;
+
+    return hasRepeated();
 }
 
 inline bool Position::isLost() {
@@ -210,6 +225,14 @@ inline double Position::simpleQ() {
 inline void Position::clear() {
     colors.fill(0);
     pieces.fill(0);
+    castlingRights.reset();
+
+    repetitionHistory.clear();
+    repetitionHistory.reserve(6000);
+
+    enPassantSquare = Square::NONE;
+
+    key = fiftyMoveRule = 0;
 
     legalMoves = -1;
 }
