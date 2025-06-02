@@ -52,7 +52,7 @@ void Node::search(Position& pos) {
 
 double Node::uct(uint64_t parentVisits) {
     double Q = visits ? getQ() : 1.0;
-    double U = 1.414 * std::sqrt(std::log(parentVisits) / std::max(visits, uint64_t(1)));
+    double U = 1.414 * policy * std::sqrt(parentVisits) / (1 + visits);
 
     return Q + U;
 }
@@ -102,8 +102,11 @@ void Node::expand(Position& pos) {
     std::allocator<Node> allocator;
     children =  allocator.allocate(childCount);
 
-    for (size_t i = 0; i < childCount; i++)
+    for (size_t i = 0; i < childCount; i++) {
         new (children + i) Node(ml[i], this);
+
+        children[i].policy = 1. / childCount;
+    }
 }
 
 void Node::backpropagate(double score) {

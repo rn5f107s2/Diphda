@@ -15,6 +15,7 @@ public:
     bool terminal = false;
 
     Move    move;
+    float   policy = 0;
     Node*   parent;
     Node*   children   = nullptr;
     uint8_t childCount = 0;
