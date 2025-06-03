@@ -17,6 +17,7 @@ UCIHandler::UCIHandler() {
     commands["perft"] = &UCIHandler::perft;
     commands["isready"] = &UCIHandler::isready;
     commands["position"] = &UCIHandler::position;
+    commands["ucinewgame"] = &UCIHandler::ucinewgame;
 } 
 
 void UCIHandler::start(int argc, char** argv) {
@@ -61,7 +62,7 @@ void UCIHandler::handleInput(const std::string &in) {
 }
 
 void UCIHandler::go(const std::string &arguments) {
-    search(*internalBoard);
+    searcher.search(*internalBoard);
 }
 
 void UCIHandler::uci(const std::string &arguments) {
@@ -112,4 +113,8 @@ void UCIHandler::position(const std::string &arguments) {
         }
     }
     
+}
+
+void UCIHandler::ucinewgame(const std::string& arguments) {
+    searcher.clear();
 }

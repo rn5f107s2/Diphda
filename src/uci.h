@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "games/game.h"
+#include "search/search.h"
 
 static const std::string name       = "Diphda";
 static const std::string version    = "0.1";
@@ -23,10 +24,12 @@ private:
     void perft(const std::string &argumetns);
     void isready(const std::string &arguments);
     void position(const std::string &arguments);
+    void ucinewgame(const std::string &arguments);
 
     void loop();
     void handleInput(const std::string &in);
 
+    Searcher searcher;
     Position* internalBoard;
     std::unordered_map<std::string, void(UCIHandler::*)(const std::string&)> commands;
 };

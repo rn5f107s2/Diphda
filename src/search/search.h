@@ -5,8 +5,6 @@
 #include "../games/game.h"
 #include "../network/network.h"
 
-void search(Position& pos);
-
 class Node {
 public:
     uint64_t visits = 0;
@@ -15,14 +13,12 @@ public:
     bool terminal = false;
 
     Move    move;
-    float   policy = 0;
-    Node*   parent;
+    float   policy     = 0;
+    Node*   parent     = nullptr;
     Node*   children   = nullptr;
     uint8_t childCount = 0;
 
 public:
-    Node() = delete;
-
     Node(Move m, Node* p) : move(m), parent(p) {}
 
     void search(Position& pos);
@@ -36,4 +32,20 @@ public:
     double getQ();
 
     void deallocate();
+};
+
+class Searcher {
+public:
+    void search(Position& pos);
+    void clear();
+
+private:
+    bool     priorPosExists = false;
+    Position priorPos;
+    Node*    root = nullptr;
+
+    Node* findNewRoot(Position& pos);
+    Node* createNewRoot();
+
+    std::vector<Node*> disjunctSubtrees;
 };

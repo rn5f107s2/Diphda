@@ -271,8 +271,16 @@ public:
         raw |= (1ULL << v);
     }
 
+    inline bool operator!=(const CastlingRights& other) const {
+        return raw != other.raw;
+    }
+
+    void operator=(const CastlingRights& other) {
+        raw = other.raw;
+    }
+
 private:
-    const std::array<uint8_t, 64> castlingMasks = 
+    static constexpr std::array<uint8_t, 64> castlingMasks = 
     {
         // H1                A1
         1, 0, 0,  3, 0, 0, 0, 2,
@@ -284,20 +292,23 @@ private:
         0, 0, 0,  0, 0, 0, 0, 0,
         4, 0, 0, 12, 0, 0, 0, 8
     };
-            
-    const uint64_t keyChanges[13] = { 0, 
-                                      Zobrist::CASTLING[WHITE_KINGSIDE], 
-                                      Zobrist::CASTLING[WHITE_QUEENSIDE], 
-                                      Zobrist::CASTLING[WHITE_KINGSIDE] ^ Zobrist::CASTLING[WHITE_QUEENSIDE], 
-                                      Zobrist::CASTLING[BLACK_KINGSIDE], 
-                                      0, 
-                                      0, 
-                                      0, 
-                                      Zobrist::CASTLING[BLACK_QUEENSIDE], 
-                                      0, 
-                                      0, 
-                                      0, 
-                                      Zobrist::CASTLING[BLACK_KINGSIDE] ^ Zobrist::CASTLING[BLACK_QUEENSIDE] };
+        
+    
+    static constexpr uint64_t keyChanges[13] = 
+    { 0, 
+      Zobrist::CASTLING[WHITE_KINGSIDE], 
+      Zobrist::CASTLING[WHITE_QUEENSIDE], 
+      Zobrist::CASTLING[WHITE_KINGSIDE] ^ Zobrist::CASTLING[WHITE_QUEENSIDE], 
+      Zobrist::CASTLING[BLACK_KINGSIDE], 
+      0, 
+      0, 
+      0, 
+      Zobrist::CASTLING[BLACK_QUEENSIDE], 
+      0, 
+      0, 
+      0, 
+      Zobrist::CASTLING[BLACK_KINGSIDE] ^ Zobrist::CASTLING[BLACK_QUEENSIDE] 
+    };
 
     uint8_t raw;
 };

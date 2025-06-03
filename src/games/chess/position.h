@@ -43,6 +43,10 @@ public:
     int  indexOf(Move move);
     void toChess768Dense(int* indices);
 
+    bool latestMatches(Position& other);
+    bool matchesHistory(const Position& other) const;
+    int  historyDepth();
+
     bool isWon();
     bool isDrawn();
     bool isLost();
@@ -50,6 +54,42 @@ public:
     double simpleQ();
 
     std::string toString();
+
+    inline bool operator==(const Position& other) const {
+        if (repetitionHistory.size() != other.repetitionHistory.size())
+            return false;
+
+        if (!matchesHistory(other))
+            return false;
+
+        for (int i = 0; i < 2; i++)
+            if (colors[i] != other.colors[i])
+                return false;
+
+        for (int i = 0; i < int(PieceType::COUNT); i++)
+            if (pieces[i] != other.pieces[i])
+                return false;
+
+        if (fiftyMoveRule != other.fiftyMoveRule)
+            return false;
+
+        if (sideToMove != other.sideToMove)
+            return false;
+
+        if (enPassantSquare != other.enPassantSquare)
+            return false;
+
+        if (castlingRights != other.castlingRights)
+            return false;
+
+        return true;
+    }
+
+    Position& operator=(const Position&) = default;
+
+    inline bool operator!=(const Position& other) const {
+        return !(*this == other);
+    }
 
     Position() {
         clear();
@@ -190,6 +230,26 @@ inline void Position::generateMoves(MoveList &ml) {
     Chess::generateMoves(*this, ml);
 
     legalMoves = ml.length();
+}
+
+inline bool Position::latestMatches(Position& other) {
+    int depth = std::min(repetitionHistory.size(), other.repetitionHistory.size());
+
+    return repetitionHistory[depth - 1] == other.repetitionHistory[depth - 1];
+}
+
+inline bool Position::matchesHistory(const Position& other) const {
+    int depth = std::min(repetitionHistory.size(), other.repetitionHistory.size());
+
+    for (int i = depth - 1; i >= 0; i--)
+        if (repetitionHistory[i] != other.repetitionHistory[i])
+            return false;
+
+    return true;
+}
+
+inline int Position::historyDepth() {
+    return repetitionHistory.size();
 }
 
 inline bool Position::isWon() {
