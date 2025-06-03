@@ -34,6 +34,8 @@ public:
     double uct(uint64_t parentVisits);
     double getQ();
 
+    void labelPolicies(float* raw);
+
     void deallocate();
 };
 
@@ -63,6 +65,7 @@ private:
 
             nodes[i]->virtualLoss(true);
             nodes[i]->backpropagate(-q);
+            nodes[i]->labelPolicies(net->getPolicy(i));
 
             nodes[i]->waiting = false;
         }
@@ -77,10 +80,10 @@ private:
     void writePolicyIndices(Position& pos, MoveList& ml){
         int* indices = policyIndices + 218 * nodes.size();
 
-        //for (int i = 0; i < ml.length(); i++)
-        //    indices[i] = pos.indexOf(ml[i]);
+        for (int i = 0; i < ml.length(); i++)
+            indices[i] = pos.indexOf(ml[i]);
 
-        memset(indices, -1, sizeof((218/* - ml.length()*/) * sizeof(int)));
+        memset(indices + ml.length(), -1, (218 - ml.length()) * sizeof(int));
     }
 
 public:

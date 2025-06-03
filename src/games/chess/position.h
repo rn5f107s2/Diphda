@@ -298,7 +298,10 @@ inline void Position::clear() {
 }
 
 inline int Position::indexOf(Move move) {
-    return move.getFrom() * 64 + move.getTo();
+    Square from = sideToMove == Color::WHITE ? move.getFrom() : move.getFrom().mirrorVertical();
+    Square to   = sideToMove == Color::WHITE ? move.getTo  () : move.getTo  ().mirrorVertical();
+
+    return from * 64 + to;
 }
 
 inline void Position::toChess768Dense(int* indices) {

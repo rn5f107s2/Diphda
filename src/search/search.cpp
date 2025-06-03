@@ -25,7 +25,9 @@ void Searcher::search(Position& pos) {
     for (int i = 0; i < root->childCount; i++) {
         double q = root->children[i].getQ();
 
-        std::cout << root->children[i].move.toString() << ": " << root->children[i].visits << " " << root->children[i].getQ() << std::endl;
+        std::cout << root->children[i].move.toString() << ": " << root->children[i].policy <<
+                                                           " " << root->children[i].visits << 
+                                                           " " << root->children[i].getQ() << std::endl;
 
         if (q < bestQ)
             continue;
@@ -103,11 +105,8 @@ void Node::expand(Position& pos, Evaluator& eval) {
     childCount = ml.length();
     children   = allocator.allocate(childCount);
 
-    for (size_t i = 0; i < childCount; i++) {
+    for (size_t i = 0; i < childCount; i++)
         new (children + i) Node(ml[i], this);
-
-        children[i].policy = 1. / childCount;
-    }
 
     waiting = true;
 
@@ -140,6 +139,17 @@ void Node::deallocate() {
 
     std::allocator<Node> allocator;
     allocator.deallocate(children, childCount);
+}
+
+void Node::labelPolicies(float* raw) {
+    int policies[256];
+    float sum = 0.0;
+
+    for (int i = 0; i < childCount; i++)
+        sum += (policies[i] = std::exp(raw[i]));
+
+    for (int i = 0; i < childCount; i++)
+        children[i].policy = policies[i] / sum;
 }
 
 void Searcher::clear() {

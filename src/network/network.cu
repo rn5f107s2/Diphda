@@ -48,7 +48,7 @@ __global__ void fcfwbatchedsparseout(int batchSize, int in, int* out, int nOut, 
         return;
 
     int idx    = threadId % nOut;
-    int outIdx = out[idx];
+    int outIdx = out[idx + nOut * batch];
     
     if (outIdx == -1)
         return;
