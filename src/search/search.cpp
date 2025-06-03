@@ -12,8 +12,10 @@ void Searcher::search(Position& pos) {
     for (int i = 0; i < 5000; i++) {
         Position copy = pos;
 
-        root->search(copy);
+        root->search(copy, *evaluator);
     }
+
+    evaluator->distribute();
 
     root->parent = rootParent;
 
@@ -22,6 +24,8 @@ void Searcher::search(Position& pos) {
 
     for (int i = 0; i < root->childCount; i++) {
         double q = root->children[i].getQ();
+
+        std::cout << root->children[i].move.toString() << ": " << root->children[i].visits << " " << root->children[i].getQ() << std::endl;
 
         if (q < bestQ)
             continue;
@@ -37,11 +41,12 @@ void Searcher::search(Position& pos) {
     priorPosExists = true;
 }
 
-void Node::search(Position& pos) {
-    if (!visits) {
-        expand(pos);
-        return rollout(pos);
-    }
+void Node::search(Position& pos, Evaluator& eval) {
+    if (!visits)
+        return expand(pos, eval);
+
+    if (waiting)
+        return eval.distribute();
 
     if (terminal)
         return backpropagate(std::abs(q) < 0.1 ? 0.0 : (q < 0 ? -1.0 : 1.0));
@@ -50,7 +55,7 @@ void Node::search(Position& pos) {
 
     pos.makeMove(toSearch->move);
 
-    toSearch->search(pos);
+    toSearch->search(pos, eval);
 }
 
 double Node::uct(uint64_t parentVisits) {
@@ -81,35 +86,33 @@ Node* Node::select() {
     return children + bestIndex;
 }
 
-void Node::rollout(Position& pos) {
+void Node::expand(Position& pos, Evaluator& eval) {
+    MoveList ml; 
+    pos.generateMoves(ml);
+
     bool won   = pos.isWon();
     bool lost  = pos.isLost();
     bool drawn = pos.isDrawn();
 
     terminal = won || lost || drawn;
-
-    visits++;
     
     if (terminal)
         return backpropagate(won ? -1.0 : (drawn ? 0.0 : 1.0));
 
-    backpropagate(-pos.simpleQ());
-}
-
-void Node::expand(Position& pos) {
-    MoveList ml; 
-    pos.generateMoves(ml);
-
-    childCount = ml.length();
-
     std::allocator<Node> allocator;
-    children =  allocator.allocate(childCount);
+    childCount = ml.length();
+    children   = allocator.allocate(childCount);
 
     for (size_t i = 0; i < childCount; i++) {
         new (children + i) Node(ml[i], this);
 
         children[i].policy = 1. / childCount;
     }
+
+    waiting = true;
+
+    eval.addNode(pos, ml, this);
+    virtualLoss(false);
 }
 
 void Node::backpropagate(double score) {
@@ -118,6 +121,14 @@ void Node::backpropagate(double score) {
 
     if (parent)
         parent->backpropagate(-score);
+}
+
+void Node::virtualLoss(bool undo) {
+    visits += undo ? -1   :  1;
+    q      += undo ?  1.0 : -1.0;
+
+    if (parent)
+        parent->virtualLoss(undo);
 }
 
 void Node::deallocate() {

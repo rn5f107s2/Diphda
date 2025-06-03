@@ -20,7 +20,7 @@ __global__ void fcfwbatched(int batchSize, int in, int out, float* input, float*
 __global__ void fcfwbatchedrelusparsein(int batchSize, int* in, int nIn, int inSize, int out, float* output, float* weights, float* biases) {
     int threadId = blockDim.x * blockIdx.x + threadIdx.x;
     int batch    = threadId / out;
-    int idx = threadId % out;
+    int idx      = threadId % out;
 
     if (batch >= batchSize)
         return;
@@ -28,7 +28,7 @@ __global__ void fcfwbatchedrelusparsein(int batchSize, int* in, int nIn, int inS
     output[batch * out + idx] = biases[idx];
 
     for (int i = 0; i < nIn; i++) {
-        int inIdx = in[i];
+        int inIdx = in[i + batch * nIn];
 
         if (inIdx == -1)
             break;
