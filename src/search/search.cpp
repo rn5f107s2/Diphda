@@ -139,6 +139,7 @@ void Node::deallocate() {
 
     std::allocator<Node> allocator;
     allocator.deallocate(children, childCount);
+    children = nullptr;
 }
 
 void Node::labelPolicies(float* raw) {
@@ -212,6 +213,10 @@ Node* Searcher::findNewRoot(Position& pos) {
 
         if (!found)
             return createNewRoot();
+
+        for (int i = 0; i < rootCandidate->parent->childCount; i++) 
+            if (rootCandidate->parent->children[i].move != rootCandidate->move)
+                rootCandidate->parent->children[i].deallocate();
 
         origin.makeMove(rootCandidate->move);
     }

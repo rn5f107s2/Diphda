@@ -96,6 +96,10 @@ public:
         return from + to + promo;
     }
 
+    bool operator!=(const Move& other) const {
+        return data != other.data;
+    }
+
 private:
     static const int SIX_BITS = 0b111111;
     static const int TWO_BITS = 0b11;
