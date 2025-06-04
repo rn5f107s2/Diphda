@@ -19,7 +19,9 @@ void Searcher::search(Position& pos) {
 
     root->parent = rootParent;
 
-    double bestQ = -1.0;
+    bool   win     = root->info.state() == WIN;
+    double bestQ   = -1.0;
+    int    bestPly = 32;
     Move bestMove;
 
     for (int i = 0; i < root->childCount; i++) {
@@ -29,14 +31,18 @@ void Searcher::search(Position& pos) {
                                                            " " << root->children[i].visits << 
                                                            " " << root->children[i].getQ() << std::endl;
 
-        if (q < bestQ)
+        if (   (!win && q < bestQ) 
+            || ( win && (root->children[i].info.state() != LOSS || root->children[i].info.ply() >= bestPly)))
             continue;
 
-        bestQ = q;
+        bestQ    = q;
+        bestPly  = root->children[i].info.ply();
         bestMove = root->children[i].move;
     }
 
-    std::cout << "info depth 1 score cp " << int(bestQ * 100) << std::endl;
+    std::string value = !win ? std::to_string(int(std::round(std::atanh(bestQ) * 400))) : std::to_string(bestPly + 1);
+
+    std::cout << "info depth 1 score " << (!win ? "cp " : "mate ") << value << std::endl;
     std::cout << "bestmove " << bestMove.toString() << std::endl;
 
     priorPos       = pos;
@@ -47,10 +53,10 @@ void Node::search(Position& pos, Evaluator& eval) {
     if (!visits)
         return expand(pos, eval);
 
-    if (waiting)
+    if (info.waiting())
         return eval.distribute();
 
-    if (terminal)
+    if (info.state() != ONGOING && !info.ply())
         return backpropagate(std::abs(q) < 0.1 ? 0.0 : (q < 0 ? -1.0 : 1.0));
 
     Node* toSearch = select();
@@ -68,7 +74,10 @@ double Node::uct(uint64_t parentVisits) {
 }
 
 double Node::getQ() {
-    return !visits ? -1.0 : q / visits;
+    if (info.state() == ONGOING)
+        return !visits ? -1.0 : q / visits;
+
+    return info.state() == LOSS ? 1.0 : (info.state() == WIN ? -1.0 : 0.0);
 }
 
 Node* Node::select() {
@@ -96,10 +105,16 @@ void Node::expand(Position& pos, Evaluator& eval) {
     bool lost  = pos.isLost();
     bool drawn = pos.isDrawn();
 
-    terminal = won || lost || drawn;
+    info.state(won ? WIN : (lost ? LOSS : (drawn ? DRAW : ONGOING)));
     
-    if (terminal)
+    if (info.state() != ONGOING) {
+        info.ply(0);
+
+        if (info.state() != DRAW)
+            parent->backpropagateMate(this);
+
         return backpropagate(won ? -1.0 : (drawn ? 0.0 : 1.0));
+    }
 
     std::allocator<Node> allocator;
     childCount = ml.length();
@@ -108,7 +123,7 @@ void Node::expand(Position& pos, Evaluator& eval) {
     for (size_t i = 0; i < childCount; i++)
         new (children + i) Node(ml[i], this);
 
-    waiting = true;
+    info.waiting(true);
 
     eval.addNode(pos, ml, this);
     virtualLoss(false);
@@ -120,6 +135,33 @@ void Node::backpropagate(double score) {
 
     if (parent)
         parent->backpropagate(-score);
+}
+
+void Node::backpropagateMate(Node* child) {
+    if (child->info.state() == LOSS) {
+        info.state(WIN);
+        info.ply(std::min(info.ply(), child->info.ply() + 1));
+
+        if (parent)
+            parent->backpropagateMate(this);
+        
+        return;
+    }
+
+    int maxPly = 0;
+
+    for (int i = 0; i < childCount; i++) {
+        if (children[i].info.state() != WIN)
+            return;
+
+        maxPly = std::max(maxPly, children[i].info.ply());
+    }
+
+    info.state(LOSS);
+    info.ply(maxPly + 1);
+
+    if (parent) 
+        parent->backpropagateMate(this);
 }
 
 void Node::virtualLoss(bool undo) {
