@@ -78,8 +78,8 @@ __global__ void fcfwrelubatched(int batchSize, int in, int out, float* input, fl
 }
 
 CudaNetwork::CudaNetwork(int bs, float* policyWeights, float* valueWeights) : batchSize(bs) {
-    cudaMalloc(&d_valueOutput , batchSize *        3 * sizeof(float));
-    cudaMalloc(&d_policyOutput, batchSize * maxMoves * sizeof(float));
+    cudaMalloc(&d_valueOutput , batchSize * valueLayer2Size * sizeof(float));
+    cudaMalloc(&d_policyOutput, batchSize * maxMoves        * sizeof(float));
 
     cudaMalloc(&d_valueIntermediate , batchSize * valueLayer1Size  * sizeof(float));
     cudaMalloc(&d_policyIntermediate, batchSize * policyLayer1Size * sizeof(float));
@@ -159,6 +159,6 @@ void CudaNetwork::forward(int* inputIndices, int* policyOutputIndices, float* va
 
     cudaDeviceSynchronize();
 
-    cudaMemcpy(valueOutput , d_valueOutput , batchSize *        3 * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(policyOutput, d_policyOutput, batchSize * maxMoves * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(valueOutput , d_valueOutput , batchSize * valueLayer2Size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(policyOutput, d_policyOutput, batchSize * maxMoves        * sizeof(float), cudaMemcpyDeviceToHost);
 }

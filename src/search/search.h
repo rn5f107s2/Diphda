@@ -55,13 +55,15 @@ private:
         for (int i = 0; i < nodes.size(); i++) {
             float* value = net->getValue(i);
 
-            float w = std::exp(value[2] / 2);
-            float d = std::exp(value[1] / 2);
-            float l = std::exp(value[0] / 2);
+            //float w = std::exp(value[2] / 2);
+            //float d = std::exp(value[1] / 2);
+            //float l = std::exp(value[0] / 2);
 
-            float sum = w + d + l;
+            //float sum = w + d + l;
 
-            float q = w / sum - l / sum;
+            //float q = w / sum - l / sum;
+
+            float q = std::tanh(value[0] / 2);
 
             nodes[i]->virtualLoss(true);
             nodes[i]->backpropagate(-q);
@@ -109,7 +111,7 @@ public:
 
         net = new Network(batchSize);
 
-        net->loadWeights("testnet.bin");
+        net->loadWeights("testnetscalar.bin");
 
         nodes.reserve(batchSize);
     }

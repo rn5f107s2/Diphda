@@ -11,7 +11,7 @@ struct CudaNetwork {
     const int batchSize;
 
     const int valueLayer1Size = 1024;
-    const int valueLayer2Size = 3;
+    const int valueLayer2Size = 1;
 
     const int policyLayer1Size = 512;
     const int policyLayer2Size = 4096;
@@ -77,7 +77,7 @@ private:
     float* policyOutputBatched, *valueOutputBatched;
 
     const int valueLayer1Size = 1024;
-    const int valueLayer2Size = 3;
+    const int valueLayer2Size = 1;
 
     const int policyLayer1Size = 512;
     const int policyLayer2Size = 4096;
