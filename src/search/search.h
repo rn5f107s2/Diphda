@@ -111,7 +111,7 @@ public:
 
         net = new Network(batchSize);
 
-        net->loadWeights("testnetscalar.bin");
+        net->loadWeights("test256.bin");
 
         nodes.reserve(batchSize);
     }

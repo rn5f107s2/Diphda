@@ -143,7 +143,7 @@ void Node::deallocate() {
 }
 
 void Node::labelPolicies(float* raw) {
-    int policies[256];
+    float policies[256];
     float sum = 0.0;
 
     for (int i = 0; i < childCount; i++)

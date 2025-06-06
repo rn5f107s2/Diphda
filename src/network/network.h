@@ -13,7 +13,7 @@ struct CudaNetwork {
     const int valueLayer1Size = 1024;
     const int valueLayer2Size = 1;
 
-    const int policyLayer1Size = 512;
+    const int policyLayer1Size = 256;
     const int policyLayer2Size = 4096;
 
     const int maxMoves  = 218;
@@ -79,7 +79,7 @@ private:
     const int valueLayer1Size = 1024;
     const int valueLayer2Size = 1;
 
-    const int policyLayer1Size = 512;
+    const int policyLayer1Size = 256;
     const int policyLayer2Size = 4096;
 
     CudaNetwork* cudaNetwork = nullptr;
