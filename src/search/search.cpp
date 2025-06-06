@@ -76,8 +76,8 @@ void Node::search(Position& pos, Evaluator& eval, float c) {
     toSearch->search(pos, eval, 1.414);
 }
 
-double Node::uct(uint64_t parentVisits, float c) {
-    double Q = visits ? getQ() : 1.0;
+double Node::uct(uint64_t parentVisits, float c, double parentQ) {
+    double Q = visits ? getQ() : -parentQ;
     double U = c * policy * std::sqrt(parentVisits) / (1 + visits);
 
     return Q + U;
@@ -92,10 +92,10 @@ double Node::getQ() {
 
 Node* Node::select(float c) {
     int    bestIndex = 0;
-    double bestUCT   = children[0].uct(visits, c);
+    double bestUCT   = children[0].uct(visits, c, getQ());
 
     for (int i = 1; i < childCount; i++) {
-        double uct = children[i].uct(visits, c);
+        double uct = children[i].uct(visits, c, getQ());
 
         if (uct < bestUCT)
             continue;

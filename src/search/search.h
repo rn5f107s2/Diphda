@@ -71,7 +71,7 @@ public:
     void  backpropagateMate(Node* child);
     void  virtualLoss(bool undo);
 
-    double uct(uint64_t parentVisits, float c);
+    double uct(uint64_t parentVisits, float c, double parentQ);
     double getQ();
 
     void labelPolicies(float* raw, float temperature);
