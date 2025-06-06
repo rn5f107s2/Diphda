@@ -22,7 +22,7 @@ void Searcher::search(Position& pos) {
     for (int i = 0; i < 5000; i++) {
         Position copy = pos;
 
-        root->search(copy, *evaluator);
+        root->search(copy, *evaluator, 5.0);
     }
 
     evaluator->distribute();
@@ -59,7 +59,7 @@ void Searcher::search(Position& pos) {
     priorPosExists = true;
 }
 
-void Node::search(Position& pos, Evaluator& eval) {
+void Node::search(Position& pos, Evaluator& eval, float c) {
     if (!visits)
         return expand(pos, eval);
 
@@ -69,16 +69,16 @@ void Node::search(Position& pos, Evaluator& eval) {
     if (info.state() != ONGOING && !info.ply())
         return backpropagate(std::abs(q) < 0.1 ? 0.0 : (q < 0 ? -1.0 : 1.0));
 
-    Node* toSearch = select();
+    Node* toSearch = select(c);
 
     pos.makeMove(toSearch->move);
 
-    toSearch->search(pos, eval);
+    toSearch->search(pos, eval, 1.414);
 }
 
-double Node::uct(uint64_t parentVisits) {
+double Node::uct(uint64_t parentVisits, float c) {
     double Q = visits ? getQ() : 1.0;
-    double U = 1.414 * policy * std::sqrt(parentVisits) / (1 + visits);
+    double U = c * policy * std::sqrt(parentVisits) / (1 + visits);
 
     return Q + U;
 }
@@ -90,12 +90,12 @@ double Node::getQ() {
     return info.state() == LOSS ? 1.0 : (info.state() == WIN ? -1.0 : 0.0);
 }
 
-Node* Node::select() {
+Node* Node::select(float c) {
     int    bestIndex = 0;
-    double bestUCT   = children[0].uct(visits);
+    double bestUCT   = children[0].uct(visits, c);
 
     for (int i = 1; i < childCount; i++) {
-        double uct = children[i].uct(visits);
+        double uct = children[i].uct(visits, c);
 
         if (uct < bestUCT)
             continue;

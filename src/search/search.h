@@ -63,15 +63,15 @@ public:
 public:
     Node(Move m, Node* p) : move(m), parent(p) {}
 
-    void search(Position& pos, Evaluator& eval);
+    void search(Position& pos, Evaluator& eval, float c);
 
-    Node* select();
+    Node* select(float c);
     void  expand(Position& pos, Evaluator& eval);
     void  backpropagate(double score);
     void  backpropagateMate(Node* child);
     void  virtualLoss(bool undo);
 
-    double uct(uint64_t parentVisits);
+    double uct(uint64_t parentVisits, float c);
     double getQ();
 
     void labelPolicies(float* raw, float temperature);
