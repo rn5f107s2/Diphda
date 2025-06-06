@@ -9,6 +9,16 @@ void Searcher::search(Position& pos) {
     Node* rootParent = root->parent;
     root->parent = nullptr;
 
+    if (!root->visits) {
+        root->expand(pos, *evaluator);
+    } else {
+        MoveList ml;
+        pos.generateMoves(ml);
+        evaluator->addNode(pos, ml, root);
+    }
+
+    evaluator->distribute(5.0f);
+
     for (int i = 0; i < 5000; i++) {
         Position copy = pos;
 
@@ -40,7 +50,7 @@ void Searcher::search(Position& pos) {
         bestMove = root->children[i].move;
     }
 
-    std::string value = !win ? std::to_string(int(std::round(std::atanh(bestQ) * 400))) : std::to_string(bestPly + 1);
+    std::string value = !win ? std::to_string(int(std::round(std::atanh(bestQ) * 2 * 133))) : std::to_string(bestPly + 1);
 
     std::cout << "info depth 1 score " << (!win ? "cp " : "mate ") << value << std::endl;
     std::cout << "bestmove " << bestMove.toString() << std::endl;
@@ -184,12 +194,12 @@ void Node::deallocate() {
     children = nullptr;
 }
 
-void Node::labelPolicies(float* raw) {
+void Node::labelPolicies(float* raw, float temperature) {
     float policies[256];
     float sum = 0.0;
 
     for (int i = 0; i < childCount; i++)
-        sum += (policies[i] = std::exp(raw[i]));
+        sum += (policies[i] = std::exp(raw[i] / temperature));
 
     for (int i = 0; i < childCount; i++)
         children[i].policy = policies[i] / sum;

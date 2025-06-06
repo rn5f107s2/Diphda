@@ -74,7 +74,7 @@ public:
     double uct(uint64_t parentVisits);
     double getQ();
 
-    void labelPolicies(float* raw);
+    void labelPolicies(float* raw, float temperature);
 
     void deallocate();
 };
@@ -89,7 +89,7 @@ private:
 
     std::vector<Node*> nodes;
 
-    void forward() {
+    void forward(float temperature = 1.0) {
         net->forward(valueIndices, policyIndices);
 
         for (int i = 0; i < nodes.size(); i++) {
@@ -107,7 +107,7 @@ private:
 
             nodes[i]->virtualLoss(true);
             nodes[i]->backpropagate(-q);
-            nodes[i]->labelPolicies(net->getPolicy(i));
+            nodes[i]->labelPolicies(net->getPolicy(i), temperature);
 
             nodes[i]->info.waiting(false);
         }
@@ -139,8 +139,8 @@ public:
             forward();
     }
 
-    void distribute() {
-        forward();
+    void distribute(float temperature = 1.0) {
+        forward(temperature);
     }
 
     Evaluator(int bs) : batchSize(bs) {
