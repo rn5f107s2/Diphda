@@ -12,7 +12,7 @@ enum GameState : int8_t {
 
 class PackedInfo {
 private:
-    int8_t raw = 31; // 1 bit waiting 2 bit w/d/l 5 bit ply
+    int8_t raw = 31; // 1 bit waiting 2 bit w/d/l 5 bit ply, 31 = not waiting, not terminal, ply = 31 = maxply
 
 public:
     bool waiting() {

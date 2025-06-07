@@ -7,8 +7,6 @@
 #include "../games/game.h"
 #include "../network/network.h"
 
-class Evaluator;
-
 class Searcher {
 public:
     void search(Position& pos);

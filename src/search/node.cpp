@@ -7,7 +7,7 @@ void Node::search(Position& pos, Evaluator& eval, float c) {
         return expand(pos, eval);
 
     if (info.waiting())
-        return eval.distribute();
+        return eval.forward();
 
     if (info.state() != ONGOING && !info.ply())
         return backpropagate(std::abs(q) < 0.1 ? 0.0 : (q < 0 ? -1.0 : 1.0));
