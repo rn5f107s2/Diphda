@@ -4,6 +4,7 @@
 #include <chrono>
 
 void Searcher::search(Position& pos) {
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     root = findNewRoot(pos);
 
     Node* rootParent = root->parent;
@@ -19,13 +20,18 @@ void Searcher::search(Position& pos) {
 
     evaluator->distribute(5.0f);
 
-    for (int i = 0; i < 5000; i++) {
+    int nodes = 0;
+
+    for (; nodes < 5000; nodes++) {
         Position copy = pos;
 
         root->search(copy, *evaluator, 5.0);
     }
 
     evaluator->distribute();
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    auto searchTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
     root->parent = rootParent;
 
@@ -52,7 +58,7 @@ void Searcher::search(Position& pos) {
 
     std::string value = !win ? std::to_string(int(std::round(std::atanh(bestQ) * 2 * 133))) : std::to_string(bestPly + 1);
 
-    std::cout << "info depth 1 score " << (!win ? "cp " : "mate ") << value << std::endl;
+    std::cout << "info depth 1 score " << (!win ? "cp " : "mate ") << value << " nps " << (nodes * 1000 / (searchTime + 1)) << std::endl;
     std::cout << "bestmove " << bestMove.toString() << std::endl;
 
     priorPos       = pos;

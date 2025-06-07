@@ -1,1 +1,3 @@
-Diphda
+!.gitignore
+!src/
+!src/**/*
