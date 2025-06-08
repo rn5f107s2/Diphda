@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <atomic>
 
 #include "../games/game.h"
 
@@ -12,52 +13,63 @@ enum GameState : int8_t {
 
 class PackedInfo {
 private:
-    int8_t raw = 31; // 1 bit waiting 2 bit w/d/l 5 bit ply, 31 = not waiting, not terminal, ply = 31 = maxply
+    std::atomic<int8_t> raw = 31; // 1 bit waiting 2 bit w/d/l 5 bit ply, 31 = not waiting, not terminal, ply = 31 = maxply
 
 public:
     bool waiting() {
-        return raw >> 7;
+        return raw.load(std::memory_order_consume) >> 7;
     }
 
     void waiting(bool newState) {
-        raw &= 0b01111111;
-        raw |= 0b10000000 * newState;
+        int8_t r = raw.load(std::memory_order_relaxed);
+
+        r &= 0b01111111;
+        r |= 0b10000000 * newState;
+
+        raw.store(r, std::memory_order_release);
     }
 
     GameState state() {
-        return GameState((raw & 0b01100000) >> 5);
+        return GameState((raw.load(std::memory_order_relaxed) & 0b01100000) >> 5);
     }
 
     void state(GameState newState) {
-        raw &= 0b10011111;
-        raw |= newState << 5;
+        int8_t r = raw.load(std::memory_order_relaxed);
+        r &= 0b10011111;
+        r |= newState << 5;
+        raw.store(r, std::memory_order_relaxed);
     }
 
     int ply() {
-        return raw & 0b00011111;
+        return raw.load(std::memory_order_relaxed) & 0b00011111;
     }
 
     void ply(int8_t newPly) {
         if (newPly > 31)
             newPly = 31;
 
-        raw &= 0b11100000;
-        raw |= newPly;
+        int8_t r = raw.load(std::memory_order_relaxed);
+
+        r &= 0b11100000;
+        r |= newPly;
+
+        raw.store(r, std::memory_order_relaxed);
     }
 };
 
 class Node {
 public:
-    uint64_t visits = 0;
-    double   q      = 0;
+    std::atomic<int   > visits = 0;
+    std::atomic<double> q      = 0;
 
     PackedInfo info;
 
     Move    move;
-    float   policy     = 0;
     Node*   parent     = nullptr;
     Node*   children   = nullptr;
     uint8_t childCount = 0;
+
+    std::atomic<float> policy = 0;
 
 public:
     Node(Move m, Node* p) : move(m), parent(p) {}
@@ -76,4 +88,7 @@ public:
     void labelPolicies(float* raw, float temperature);
 
     void deallocate();
+
+    void updateVisits(int amount);
+    void updateQ(double change);
 };

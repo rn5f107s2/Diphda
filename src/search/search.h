@@ -13,7 +13,7 @@ public:
     void clear();
 
     Searcher() {
-        evaluator = new Evaluator(100);
+        evaluator = new Evaluator(50);
     }
 
 private:

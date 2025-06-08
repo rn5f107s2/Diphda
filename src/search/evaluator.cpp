@@ -2,10 +2,14 @@
 #include "evaluator.h"
 #include "../network/network.h"
 
-void Evaluator::forward(float temperature) {
-    net->forward(valueIndices, policyIndices);
+#include <chrono>
 
-    for (int i = 0; i < nodes.size(); i++) {
+void Evaluator::forwardInternal() {
+    bool half = !activeHalf.load(std::memory_order_relaxed);
+
+    net->forward(valueIndices[half], policyIndices[half]);
+
+    for (int i = 0; i < nodes[half].size(); i++) {
         float* value = net->getValue(i);
 
         //float w = std::exp(value[2] / 2);
@@ -18,22 +22,22 @@ void Evaluator::forward(float temperature) {
 
         float q = std::tanh(value[0] / 2);
 
-        nodes[i]->virtualLoss(true);
-        nodes[i]->backpropagate(-q);
-        nodes[i]->labelPolicies(net->getPolicy(i), temperature);
+        nodes[half][i]->virtualLoss(true);
+        nodes[half][i]->backpropagate(-q);
+        nodes[half][i]->labelPolicies(net->getPolicy(i), temp);
 
-        nodes[i]->info.waiting(false);
+        nodes[half][i]->info.waiting(false);
     }
 
-    nodes.clear();
+    nodes[half].clear();
 }
 
-void Evaluator::writeValueIndices(Position& pos) {
-    pos.toChess768Dense(valueIndices + 32 * nodes.size());
+void Evaluator::writeValueIndices(Position& pos, bool half) {
+    pos.toChess768Dense(valueIndices[half] + 32 * nodes[half].size());
 }
 
-void Evaluator::writePolicyIndices(Position& pos, MoveList& ml){
-    int* indices = policyIndices + 218 * nodes.size();
+void Evaluator::writePolicyIndices(Position& pos, MoveList& ml, bool half){
+    int* indices = policyIndices[half] + 218 * nodes[half].size();
 
     for (int i = 0; i < ml.length(); i++)
         indices[i] = pos.indexOf(ml[i]);
@@ -42,11 +46,32 @@ void Evaluator::writePolicyIndices(Position& pos, MoveList& ml){
 }
 
 void Evaluator::addNode(Position& pos, MoveList& ml, Node* node) {
-    writeValueIndices(pos);
-    writePolicyIndices(pos, ml);
+    bool half = activeHalf.load(std::memory_order_relaxed);
 
-    nodes.push_back(node);
+    writeValueIndices(pos, half);
+    writePolicyIndices(pos, ml, half);
 
-    if (nodes.size() == batchSize)
+    nodes[half].push_back(node);
+
+    if (nodes[half].size() == batchSize)
         forward();
 }
+
+void Evaluator::forward(float temperature) {
+    std::unique_lock<std::mutex> lk(mtx);
+    cv.wait(lk, [&] { return !evaluating; } );
+
+    activeHalf.fetch_xor(1, std::memory_order_relaxed);
+    batchReady = evaluating = true;
+    temp = temperature;
+
+    lk.unlock();
+    cv.notify_one();
+}
+
+void Evaluator::forwardBlocking(float temperature) {
+    forward(temperature);
+    std::unique_lock<std::mutex> lk(mtx);
+    cv.wait(lk, [&] { return !evaluating; } );
+}
+

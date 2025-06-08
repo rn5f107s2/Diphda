@@ -3,14 +3,16 @@
 #include "evaluator.h"
 
 void Node::search(Position& pos, Evaluator& eval, float c) {
-    if (!visits)
+    if (!visits.load(std::memory_order_relaxed))
         return expand(pos, eval);
 
-    if (info.waiting())
-        return eval.forward();
+    if (info.waiting()) {
+        std::cout << "interesting" << std::endl; 
+        return eval.forwardBlocking();
+    }
 
     if (info.state() != ONGOING && !info.ply())
-        return backpropagate(std::abs(q) < 0.1 ? 0.0 : (q < 0 ? -1.0 : 1.0));
+        return backpropagate(info.state() == WIN ? -1.0 : (info.state() == LOSS ? 1.0 : 0.0));
 
     Node* toSearch = select(c);
 
@@ -20,25 +22,33 @@ void Node::search(Position& pos, Evaluator& eval, float c) {
 }
 
 double Node::uct(uint64_t parentVisits, float c, double parentQ) {
-    double Q = visits ? getQ() : -parentQ;
-    double U = c * policy * std::sqrt(parentVisits) / (1 + visits);
+    int n = visits.load(std::memory_order_relaxed);
+    
+    double Q = n ? getQ() : -parentQ;
+    double U = c * policy.load(std::memory_order_relaxed) * std::sqrt(parentVisits) / (1 + n);
 
     return Q + U;
 }
 
 double Node::getQ() {
+    int    n  = visits.load(std::memory_order_relaxed);
+    double q2 = q.load(std::memory_order_relaxed); 
+
     if (info.state() == ONGOING)
-        return !visits ? -1.0 : q / visits;
+        return !n ? -1.0 : q2 / n;
 
     return info.state() == LOSS ? 1.0 : (info.state() == WIN ? -1.0 : 0.0);
 }
 
 Node* Node::select(float c) {
+    int    n  = visits.load(std::memory_order_relaxed);
+    double q2 = getQ(); 
+
     int    bestIndex = 0;
-    double bestUCT   = children[0].uct(visits, c, getQ());
+    double bestUCT   = children[0].uct(n, c, q2);
 
     for (int i = 1; i < childCount; i++) {
-        double uct = children[i].uct(visits, c, getQ());
+        double uct = children[i].uct(n, c, q2);
 
         if (uct < bestUCT)
             continue;
@@ -83,8 +93,8 @@ void Node::expand(Position& pos, Evaluator& eval) {
 }
 
 void Node::backpropagate(double score) {
-    visits++;
-    q += score;
+    updateVisits(1);
+    updateQ(score);
 
     if (parent)
         parent->backpropagate(-score);
@@ -118,8 +128,8 @@ void Node::backpropagateMate(Node* child) {
 }
 
 void Node::virtualLoss(bool undo) {
-    visits += undo ? -1   :  1;
-    q      += undo ?  1.0 : -1.0;
+    updateVisits(undo ? -1 : 1);
+    updateQ(undo ? 1.0 : -1.0);
 
     if (parent)
         parent->virtualLoss(undo);
@@ -145,5 +155,13 @@ void Node::labelPolicies(float* raw, float temperature) {
         sum += (policies[i] = std::exp(raw[i] / temperature));
 
     for (int i = 0; i < childCount; i++)
-        children[i].policy = policies[i] / sum;
+        children[i].policy.store(policies[i] / sum, std::memory_order_relaxed);
+}
+
+void Node::updateVisits(int amount) {
+    visits.fetch_add(amount, std::memory_order_relaxed);
+}
+
+void Node::updateQ(double change) {
+    q.fetch_add(change, std::memory_order_relaxed);
 }

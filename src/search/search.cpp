@@ -19,7 +19,7 @@ void Searcher::search(Position& pos) {
         evaluator->addNode(pos, ml, root);
     }
 
-    evaluator->forward(5.0f);
+    evaluator->forwardBlocking(5.0f);
 
     int nodes = 0;
 
@@ -29,7 +29,7 @@ void Searcher::search(Position& pos) {
         root->search(copy, *evaluator, 5.0);
     }
 
-    evaluator->forward();
+    evaluator->forwardBlocking();
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     auto searchTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
