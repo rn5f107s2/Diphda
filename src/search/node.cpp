@@ -6,10 +6,8 @@ void Node::search(Position& pos, Evaluator& eval, float c) {
     if (!visits.load(std::memory_order_relaxed))
         return expand(pos, eval);
 
-    if (info.waiting()) {
-        std::cout << "interesting" << std::endl; 
+    if (info.waiting())
         return eval.forwardBlocking();
-    }
 
     if (info.state() != ONGOING && !info.ply())
         return backpropagate(info.state() == WIN ? -1.0 : (info.state() == LOSS ? 1.0 : 0.0));
@@ -79,17 +77,9 @@ void Node::expand(Position& pos, Evaluator& eval) {
         return backpropagate(won ? -1.0 : (drawn ? 0.0 : 1.0));
     }
 
-    std::allocator<Node> allocator;
-    childCount = ml.length();
-    children   = allocator.allocate(childCount);
-
-    for (size_t i = 0; i < childCount; i++)
-        new (children + i) Node(ml[i], this);
-
-    info.waiting(true);
+    createChildren(ml);
 
     eval.addNode(pos, ml, this);
-    virtualLoss(false);
 }
 
 void Node::backpropagate(double score) {
@@ -164,4 +154,13 @@ void Node::updateVisits(int amount) {
 
 void Node::updateQ(double change) {
     q.fetch_add(change, std::memory_order_relaxed);
+}
+
+void Node::createChildren(MoveList& ml) {
+    std::allocator<Node> allocator;
+    childCount = ml.length();
+    children   = allocator.allocate(childCount);
+
+    for (size_t i = 0; i < childCount; i++)
+        new (children + i) Node(ml[i], this);
 }

@@ -48,13 +48,16 @@ void Evaluator::writePolicyIndices(Position& pos, MoveList& ml, bool half){
 void Evaluator::addNode(Position& pos, MoveList& ml, Node* node) {
     bool half = activeHalf.load(std::memory_order_relaxed);
 
+    node->info.waiting(true);
+    node->virtualLoss(false);
+
     writeValueIndices(pos, half);
     writePolicyIndices(pos, ml, half);
 
     nodes[half].push_back(node);
 
     if (nodes[half].size() == batchSize)
-        forward();
+        forwardBlocking();
 }
 
 void Evaluator::forward(float temperature) {

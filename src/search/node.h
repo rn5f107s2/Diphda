@@ -4,6 +4,7 @@
 #include <atomic>
 
 #include "../games/game.h"
+#include "../movelist.h"
 
 class Evaluator;
 
@@ -91,4 +92,5 @@ public:
 
     void updateVisits(int amount);
     void updateQ(double change);
+    void createChildren(MoveList& ml);
 };

@@ -6,20 +6,8 @@
 
 void Searcher::search(Position& pos) {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    root = findNewRoot(pos);
 
-    Node* rootParent = root->parent;
-    root->parent = nullptr;
-
-    if (!root->visits) {
-        root->expand(pos, *evaluator);
-    } else {
-        MoveList ml;
-        pos.generateMoves(ml);
-        evaluator->addNode(pos, ml, root);
-    }
-
-    evaluator->forwardBlocking(5.0f);
+    prepareNewRoot(pos);
 
     int nodes = 0;
 
@@ -33,8 +21,6 @@ void Searcher::search(Position& pos) {
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     auto searchTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-
-    root->parent = rootParent;
 
     bool   win     = root->info.state() == WIN;
     double bestQ   = -1.0;
@@ -142,4 +128,20 @@ Node* Searcher::findNewRoot(Position& pos) {
     }
 
     return rootCandidate;
+}
+
+void Searcher::prepareNewRoot(Position& pos) {
+    root = findNewRoot(pos);
+
+    root->parent = nullptr;
+
+    MoveList ml;
+    pos.generateMoves(ml);
+
+    if (!root->visits)
+        root->createChildren(ml);
+        
+    evaluator->addNode(pos, ml, root);
+
+    evaluator->forwardBlocking(5.0f);
 }
