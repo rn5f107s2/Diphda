@@ -1,7 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <chrono> 
+#include <chrono>
+#include <functional>
 
 #include "node.h"
 #include "evaluator.h"
@@ -27,6 +28,8 @@ private:
     void prepareNewRoot(Position& pos);
     Node* findNewRoot(Position& pos);
     Node* createNewRoot();
+
+    Node* selectBest(std::function<double(Node&)> func);
 
     Evaluator* evaluator;
 

@@ -22,31 +22,19 @@ void Searcher::search(Position& pos, SearchTime& st) {
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     auto searchTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
-    bool   win     = root->info.state() == WIN;
-    double bestQ   = -1.0;
-    int    bestPly = 32;
-    Move bestMove;
+    bool win = root->info.state() == WIN;
 
-    for (int i = 0; i < root->childCount; i++) {
-        double q = root->children[i].getQ();
+    auto criterium = win ? [] (Node& n) { if (n.info.state() != LOSS) return -1.0; return double(31 - n.info.ply()); } 
+                         : [] (Node& n) { return n.getQ(); };
 
-        std::cout << root->children[i].move.toString() << ": " << root->children[i].policy <<
-                                                           " " << root->children[i].visits << 
-                                                           " " << root->children[i].getQ() << std::endl;
+    Node* best = selectBest(criterium);
 
-        if (   (!win && q < bestQ) 
-            || ( win && (root->children[i].info.state() != LOSS || root->children[i].info.ply() >= bestPly)))
-            continue;
-
-        bestQ    = q;
-        bestPly  = root->children[i].info.ply();
-        bestMove = root->children[i].move;
-    }
-
-    std::string value = !win ? std::to_string(int(std::round(std::atanh(bestQ) * 2 * 133))) : std::to_string(bestPly + 1);
+    std::string value = win ? std::to_string(best->info.ply() + 1)
+                            : std::to_string(int(std::round(std::atanh(best->getQ()) * 2 * 133)));
+                             
 
     std::cout << "info depth 1 score " << (!win ? "cp " : "mate ") << value << " nps " << (nodes * 1000 / (searchTime + 1)) << std::endl;
-    std::cout << "bestmove " << bestMove.toString() << std::endl;
+    std::cout << "bestmove " << best->move.toString() << std::endl;
 
     priorPos       = pos;
     priorPosExists = true;
@@ -144,4 +132,21 @@ void Searcher::prepareNewRoot(Position& pos) {
     evaluator->addNode(pos, ml, root);
 
     evaluator->forwardBlocking(5.0f);
+}
+
+Node* Searcher::selectBest(std::function<double(Node&)> func) {
+    Node*  selected = nullptr;
+    double best     = -std::numeric_limits<double>::infinity();
+
+    for (int i = 0; i < root->childCount; i++) {
+        double val = func(root->children[i]);
+
+        if (val < best)
+            continue;
+
+        best     = val;
+        selected = root->children + i;
+    }
+
+    return selected;
 }

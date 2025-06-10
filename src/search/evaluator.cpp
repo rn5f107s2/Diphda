@@ -57,7 +57,7 @@ void Evaluator::addNode(Position& pos, MoveList& ml, Node* node) {
     nodes[half].push_back(node);
 
     if (nodes[half].size() == batchSize)
-        forward();
+        forwardBlocking();
 }
 
 void Evaluator::forward(float temperature) {
