@@ -62,7 +62,37 @@ void UCIHandler::handleInput(const std::string &in) {
 }
 
 void UCIHandler::go(const std::string &arguments) {
-    searcher.search(*internalBoard);
+    SearchTime st;
+
+    std::vector<std::string> args = split(arguments, ' ');
+
+    for (int i = 0; i < args.size() - 1; i++) {
+        if (args[i] == "wtime" && internalBoard->getSideToMove() == Chess::Color::WHITE)
+            st.time = std::stoull(args[i + 1]);
+
+        if (args[i] == "btime" && internalBoard->getSideToMove() == Chess::Color::BLACK)
+            st.time = std::stoull(args[i + 1]);
+
+        if (args[i] == "winc" && internalBoard->getSideToMove() == Chess::Color::WHITE)
+            st.increment = std::stoull(args[i + 1]);
+
+        if (args[i] == "binc" && internalBoard->getSideToMove() == Chess::Color::BLACK)
+            st.increment = std::stoull(args[i + 1]);
+
+        if (args[i] == "nodes")
+            st.nodesLimit = std::stoi(args[i + 1]);
+
+        if (args[i] == "depth")
+            st.depthLimit = std::stoi(args[i + 1]);
+
+        if (args[i] == "movestogo")
+            st.movesToGo = std::stoi(args[i + 1]);
+
+        if (args[i] == "movetime")
+            st.movesToGo = 1, st.increment = 0, st.time = std::stoi(args[i + 1]);
+    }
+
+    searcher.search(*internalBoard, st);
 }
 
 void UCIHandler::uci(const std::string &arguments) {

@@ -4,14 +4,14 @@
 #include <cmath>
 #include <chrono>
 
-void Searcher::search(Position& pos) {
+void Searcher::search(Position& pos, SearchTime& st) {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     prepareNewRoot(pos);
 
     int nodes = 0;
 
-    for (; nodes < 5000; nodes++) {
+    for (; !shouldStop(st, nodes); nodes++) {
         Position copy = pos;
 
         root->search(copy, *evaluator, 5.0);
