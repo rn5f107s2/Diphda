@@ -6,6 +6,7 @@
 
 #include "node.h"
 #include "evaluator.h"
+#include "parameters.h"
 #include "../games/game.h"
 #include "../network/network.h"
 
@@ -20,6 +21,14 @@ public:
         evaluator = new Evaluator(100);
     }
 
+    OptionsContainer& getOptions() {
+        return params.getOptions();
+    }
+
+    void updateOptions() {
+        params.update();
+    }
+
 private:
     bool     priorPosExists = false;
     Position priorPos;
@@ -32,6 +41,8 @@ private:
     Node* selectBest(std::function<double(Node&)> func);
 
     Evaluator* evaluator;
+
+    SearchParameters params;
 
     std::vector<Node*> disjunctSubtrees;
 };

@@ -17,7 +17,10 @@ UCIHandler::UCIHandler() {
     commands["perft"] = &UCIHandler::perft;
     commands["isready"] = &UCIHandler::isready;
     commands["position"] = &UCIHandler::position;
+    commands["setoption"] = &UCIHandler::setoption;
     commands["ucinewgame"] = &UCIHandler::ucinewgame;
+
+    uciOptions.insert(uciOptions.begin(), searcher.getOptions().begin(), searcher.getOptions().end());
 } 
 
 void UCIHandler::start(int argc, char** argv) {
@@ -96,6 +99,9 @@ void UCIHandler::go(const std::string &arguments) {
 }
 
 void UCIHandler::uci(const std::string &arguments) {
+    std::cout << "id name " + name + " " + version << std::endl; 
+    std::cout << "id author rn5f107s2" << std::endl;
+    uciOptions.print();
     std::cout << "uciok" << std::endl;
 }
 
@@ -143,6 +149,17 @@ void UCIHandler::position(const std::string &arguments) {
         }
     }
     
+}
+
+void UCIHandler::setoption(const std::string &arguments) {
+    std::vector<std::string> args = split(arguments, ' ');
+
+    bool sucess = uciOptions.set(args[1], args[3]);
+
+    if (!sucess)
+        std::cout << "info string could not set option" << std::endl;
+    else
+        searcher.updateOptions();
 }
 
 void UCIHandler::ucinewgame(const std::string& arguments) {

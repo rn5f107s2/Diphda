@@ -5,6 +5,7 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "ucioption.h"
 #include "games/game.h"
 #include "search/search.h"
 
@@ -24,6 +25,7 @@ private:
     void perft(const std::string &argumetns);
     void isready(const std::string &arguments);
     void position(const std::string &arguments);
+    void setoption(const std::string &arguments);
     void ucinewgame(const std::string &arguments);
 
     void loop();
@@ -31,5 +33,6 @@ private:
 
     Searcher searcher;
     Position* internalBoard;
+    OptionsContainer uciOptions;
     std::unordered_map<std::string, void(UCIHandler::*)(const std::string&)> commands;
 };

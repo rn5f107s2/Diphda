@@ -1,8 +1,9 @@
 #include "node.h"
 #include "../games/game.h"
 #include "evaluator.h"
+#include "parameters.h"
 
-void Node::search(Position& pos, Evaluator& eval, float c) {
+void Node::search(Position& pos, Evaluator& eval, const SearchParameters& params, float c) {
     if (!visits.load(std::memory_order_relaxed))
         return expand(pos, eval);
 
@@ -16,7 +17,7 @@ void Node::search(Position& pos, Evaluator& eval, float c) {
 
     pos.makeMove(toSearch->move);
 
-    toSearch->search(pos, eval, 1.414);
+    toSearch->search(pos, eval, params, params.cpuct);
 }
 
 double Node::uct(uint64_t parentVisits, float c, double parentQ) {

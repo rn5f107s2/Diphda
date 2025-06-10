@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <atomic>
 
+#include "parameters.h"
 #include "../games/game.h"
 #include "../movelist.h"
 
@@ -75,7 +76,7 @@ public:
 public:
     Node(Move m, Node* p) : move(m), parent(p) {}
 
-    void search(Position& pos, Evaluator& eval, float c);
+    void search(Position& pos, Evaluator& eval, const SearchParameters& params, float c);
 
     Node* select(float c);
     void  expand(Position& pos, Evaluator& eval);

@@ -7,6 +7,8 @@
 void Searcher::search(Position& pos, SearchTime& st) {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
+    params.update();
+
     prepareNewRoot(pos);
 
     int nodes = 0;
@@ -14,7 +16,7 @@ void Searcher::search(Position& pos, SearchTime& st) {
     for (; !shouldStop(st, nodes); nodes++) {
         Position copy = pos;
 
-        root->search(copy, *evaluator, 5.0);
+        root->search(copy, *evaluator, params, params.root_cpuct);
     }
 
     evaluator->forwardBlocking();
@@ -131,7 +133,7 @@ void Searcher::prepareNewRoot(Position& pos) {
         
     evaluator->addNode(pos, ml, root);
 
-    evaluator->forwardBlocking(5.0f);
+    evaluator->forwardBlocking(params.root_pst);
 }
 
 Node* Searcher::selectBest(std::function<double(Node&)> func) {
