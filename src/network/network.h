@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <cuda_runtime.h>
 
 struct CudaNetwork {
     const int batchSize;
@@ -26,6 +27,8 @@ struct CudaNetwork {
     
     int* d_policyOutIndices;
     int* d_inputIndices;
+
+    cudaStream_t valueStream, policyStream;
 
     CudaNetwork(int batchSize, float* policyWeights, float* valueWeights);
     void forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput);
