@@ -13,9 +13,12 @@ void Node::search(Position& pos, Evaluator& eval, const SearchParameters& params
     if (info.state() != ONGOING && !info.ply())
         return backpropagate(info.state() == WIN ? -1.0 : (info.state() == LOSS ? 1.0 : 0.0));
 
+    if (!children)
+        createChildren();
+
     Node* toSearch = select(c);
 
-    pos.makeMove(toSearch->move);
+    pos.makeMove(toSearch->getMove());
 
     toSearch->search(pos, eval, params, params.cpuct);
 }
@@ -24,7 +27,7 @@ double Node::uct(uint64_t parentVisits, float c, double parentQ) {
     int n = visits.load(std::memory_order_relaxed);
     
     double Q = n ? getQ() : -parentQ;
-    double U = c * policy.load(std::memory_order_relaxed) * std::sqrt(parentVisits) / (1 + n);
+    double U = c * getPolicy() * std::sqrt(parentVisits) / (1 + n);
 
     return Q + U;
 }
@@ -78,7 +81,7 @@ void Node::expand(Position& pos, Evaluator& eval) {
         return backpropagate(won ? -1.0 : (drawn ? 0.0 : 1.0));
     }
 
-    createChildren(ml);
+    createEdges(ml);
 
     eval.addNode(pos, ml, this);
 }
@@ -127,14 +130,22 @@ void Node::virtualLoss(bool undo) {
 }
 
 void Node::deallocate() {
+    if (!edges)
+        return;
+
+    std::allocator<Edge> eAllocator;
+    eAllocator.deallocate(edges, childCount);
+
+    edges = nullptr;
+
     if (!children)
         return;
 
     for (int i = 0; i < childCount; i++)
         children[i].deallocate();
 
-    std::allocator<Node> allocator;
-    allocator.deallocate(children, childCount);
+    std::allocator<Node> nAllocator;
+    nAllocator.deallocate(children, childCount);
     children = nullptr;
 }
 
@@ -146,7 +157,7 @@ void Node::labelPolicies(float* raw, float temperature) {
         sum += (policies[i] = std::exp(raw[i] / temperature));
 
     for (int i = 0; i < childCount; i++)
-        children[i].policy.store(policies[i] / sum, std::memory_order_relaxed);
+        edges[i].policy.store(policies[i] / sum, std::memory_order_relaxed);
 }
 
 void Node::updateVisits(int amount) {
@@ -157,11 +168,27 @@ void Node::updateQ(double change) {
     q.fetch_add(change, std::memory_order_relaxed);
 }
 
-void Node::createChildren(MoveList& ml) {
-    std::allocator<Node> allocator;
+void Node::createEdges(MoveList& ml) {
+    std::allocator<Edge> allocator;
     childCount = ml.length();
-    children   = allocator.allocate(childCount);
+    edges      = allocator.allocate(childCount);
 
     for (size_t i = 0; i < childCount; i++)
-        new (children + i) Node(ml[i], this);
+        new (edges + i) Edge(ml[i]);
+}
+
+void Node::createChildren() {
+    std::allocator<Node> allocator;
+    children = allocator.allocate(childCount);
+
+    for (int i = 0; i < childCount; i++)
+        new (children + i) Node(this, i);
+}
+
+float Node::getPolicy() {
+    return parent->edges[index].policy.load(std::memory_order_relaxed);
+}
+
+Move Node::getMove() {
+    return parent->edges[index].move;
 }

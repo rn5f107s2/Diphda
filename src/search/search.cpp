@@ -36,7 +36,7 @@ void Searcher::search(Position& pos, SearchTime& st) {
                              
 
     std::cout << "info depth 1 score " << (!win ? "cp " : "mate ") << value << " nps " << (nodes * 1000 / (searchTime + 1)) << std::endl;
-    std::cout << "bestmove " << best->move.toString() << std::endl;
+    std::cout << "bestmove " << best->getMove().toString() << std::endl;
 
     priorPos       = pos;
     priorPosExists = true;
@@ -54,7 +54,7 @@ void Searcher::clear() {
 }
 
 Node* Searcher::createNewRoot() {
-    Node* newRoot = new Node(Move(), nullptr);
+    Node* newRoot = new Node(nullptr, 0);
 
     disjunctSubtrees.push_back(newRoot);
 
@@ -89,7 +89,7 @@ Node* Searcher::findNewRoot(Position& pos) {
         for (int i = 0; i < rootCandidate->childCount; i++) {
             Position originCopy = origin;
 
-            originCopy.makeMove(rootCandidate->children[i].move);
+            originCopy.makeMove(rootCandidate->children[i].getMove());
 
             found = originCopy.latestMatches(target);
 
@@ -104,10 +104,10 @@ Node* Searcher::findNewRoot(Position& pos) {
             return createNewRoot();
 
         for (int i = 0; i < rootCandidate->parent->childCount; i++) 
-            if (rootCandidate->parent->children[i].move != rootCandidate->move)
+            if (rootCandidate->parent->children[i].getMove() != rootCandidate->getMove())
                 rootCandidate->parent->children[i].deallocate();
 
-        origin.makeMove(rootCandidate->move);
+        origin.makeMove(rootCandidate->getMove());
     }
 
     for (int i = 0; i < priorPos.historyDepth() - pos.historyDepth(); i++) {
@@ -129,7 +129,7 @@ void Searcher::prepareNewRoot(Position& pos) {
     pos.generateMoves(ml);
 
     if (!root->visits)
-        root->createChildren(ml);
+        root->createEdges(ml);
         
     evaluator->addNode(pos, ml, root);
 

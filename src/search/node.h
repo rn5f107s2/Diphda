@@ -59,22 +59,25 @@ public:
     }
 };
 
+struct Edge;
+
 class Node {
 public:
-    std::atomic<int   > visits = 0;
-    std::atomic<double> q      = 0;
+    std::atomic<double> q = 0; // 8
 
-    PackedInfo info;
+    Node* parent   = nullptr; // 8
+    Node* children = nullptr; // 8
+    Edge* edges    = nullptr; // 8
 
-    Move    move;
-    Node*   parent     = nullptr;
-    Node*   children   = nullptr;
-    uint8_t childCount = 0;
+    std::atomic<int> visits = 0; // 4
 
-    std::atomic<float> policy = 0;
+    PackedInfo info; // 1
+
+    uint8_t index = 0; // 1
+    uint8_t childCount = 0; // 1
 
 public:
-    Node(Move m, Node* p) : move(m), parent(p) {}
+    Node(Node* p, uint8_t idx): parent(p), index(idx) {}
 
     void search(Position& pos, Evaluator& eval, const SearchParameters& params, float c);
 
@@ -93,5 +96,17 @@ public:
 
     void updateVisits(int amount);
     void updateQ(double change);
-    void createChildren(MoveList& ml);
+    void createEdges(MoveList& ml);
+    void createChildren();
+
+    float getPolicy();
+    Move  getMove();
+};
+
+struct Edge {
+    std::atomic<float> policy;
+    const Move  move;
+    
+public:
+    Edge(Move m) : move(m) {}
 };
