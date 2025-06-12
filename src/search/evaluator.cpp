@@ -68,7 +68,7 @@ void Collector::addNode(Node* node, Position& pos, MoveList& ml, float temp) {
     data[activeHalf].pushBack(node, pos, ml, temp);
 }
 
-void Evaluator::forward(float temperature) {
+void Evaluator::forward() {
     std::unique_lock<std::mutex> lk(mtx);
     cv.wait(lk, [&] { return !evaluating; } );
 
@@ -79,8 +79,8 @@ void Evaluator::forward(float temperature) {
     cv.notify_one();
 }
 
-void Evaluator::forwardBlocking(float temperature) {
-    forward(temperature);
+void Evaluator::forwardBlocking() {
+    forward();
     std::unique_lock<std::mutex> lk(mtx);
     cv.wait(lk, [&] { return !evaluating; } );
 }

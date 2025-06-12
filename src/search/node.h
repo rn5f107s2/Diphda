@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <atomic>
 
-#include "parameters.h"
+#include "searchparams.h"
 #include "../games/game.h"
 #include "../movelist.h"
 

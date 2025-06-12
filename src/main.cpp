@@ -5,9 +5,12 @@
 #include "games/chess/attacks.h"
 #include "games/chess/position.h"
 #include "network/network.h"
+#include "selfplay/manager.h"
 
 int main(int argc, char** argv) {
     Chess::Attacks::init();
+
+    SelfplayManager sm; sm.play();
 
     UCIHandler* uci = new UCIHandler();
     uci->start(argc, argv);

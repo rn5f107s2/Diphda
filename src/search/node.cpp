@@ -1,7 +1,7 @@
 #include "node.h"
 #include "../games/game.h"
 #include "evaluator.h"
-#include "parameters.h"
+#include "searchparams.h"
 
 void Node::search(Position& pos, Collector& collector, const SearchParameters& params, float c) {
     if (!visits.load(std::memory_order_relaxed))
