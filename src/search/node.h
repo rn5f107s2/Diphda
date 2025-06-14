@@ -101,6 +101,8 @@ public:
 
     float getPolicy();
     Move  getMove();
+
+    void setPolicy(float newP);
 };
 
 struct Edge {

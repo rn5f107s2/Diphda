@@ -192,3 +192,7 @@ float Node::getPolicy() {
 Move Node::getMove() {
     return parent->edges[index].move;
 }
+
+void Node::setPolicy(float newPolicy) {
+    parent->edges[index].policy.store(newPolicy, std::memory_order_relaxed);
+}

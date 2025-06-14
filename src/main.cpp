@@ -10,7 +10,7 @@
 int main(int argc, char** argv) {
     Chess::Attacks::init();
 
-    SelfplayManager sm; sm.play();
+    SelfplayManager sm; sm.run();
 
     UCIHandler* uci = new UCIHandler();
     uci->start(argc, argv);

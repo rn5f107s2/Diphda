@@ -6,8 +6,8 @@
 
 #define PARAMS                   \
     X(cpuct, 1.414, 0.1, 3)      \
-    X(root_cpuct, 5.0, 1.0, 7.0) \
-    X(root_pst, 5.0, 1.0, 7.0)
+    X(root_cpuct, 2.0, 1.0, 7.0) \
+    X(root_pst, 2.0, 1.0, 7.0)
 
 struct SearchParameters {
 private:

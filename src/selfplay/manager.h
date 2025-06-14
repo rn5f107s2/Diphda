@@ -1,31 +1,33 @@
 #pragma once
 
+#include "selfplayparams.h"
 #include "selfplay.h"
+#include "dataformat.h"
 
 class SelfplayManager {
 private:
     Evaluator* eval;
-    SelfplaySearcher s;
+
+    SelfplayParmeters params;
+
+    int miniBatchSize;
+    int concurrentGames;
+
+    bool activeHalf = false;
+
+    uint64_t nodesSearched = 0;
+    std::chrono::steady_clock::time_point begin;
+
+    std::array<std::vector<SelfplaySearcher>, 2> games;
+    std::array<std::vector<GameRecord>, 2> gameRecords;
+
+    void collectBatch();
+    void collectNode(int gameIdx);
+
+    std::ofstream outFile;
 
 public:
-    SelfplayManager() : eval(new Evaluator(2)), s(eval) {}
+    SelfplayManager();
 
-    void play() {
-        std::cout << "Starting game!" << std::endl;
-
-        while (!s.isTerminal()) {
-            if (s.currentSearchNodes() >= 5000) {
-                Move bm = s.getRoot()->select(0)->getMove();
-
-                std::cout << s.getPos().toString() << std::endl;
-                std::cout << bm.toString() << std::endl;
-
-                s.playMove(bm);
-            }   
-
-            s.addSingle();
-
-            eval->forwardBlocking();
-        }
-    }
+    void run();
 };
