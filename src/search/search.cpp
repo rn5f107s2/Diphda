@@ -16,7 +16,13 @@ void Searcher::search(Position& pos, SearchTime& st) {
     for (; !shouldStop(st, nodes); nodes++) {
         Position copy = pos;
 
-        root->search(copy, *evaluator, params, params.root_cpuct);
+        root->search(copy, evaluator->getCollector(), params, params.root_cpuct);
+
+        if (evaluator->getCollector().getHalf(true).isFull())
+            evaluator->forward();
+
+        if (evaluator->getCollector().getHalf(true).forwardEarly)
+            evaluator->forwardBlocking();
     }
 
     evaluator->forwardBlocking();
@@ -131,9 +137,9 @@ void Searcher::prepareNewRoot(Position& pos) {
     if (!root->visits)
         root->createEdges(ml);
         
-    evaluator->addNode(pos, ml, root);
+    evaluator->getCollector().addNode(root, pos, ml, params.root_pst);
 
-    evaluator->forwardBlocking(params.root_pst);
+    evaluator->forwardBlocking();
 }
 
 Node* Searcher::selectBest(std::function<double(Node&)> func) {

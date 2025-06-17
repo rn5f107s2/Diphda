@@ -7,7 +7,7 @@
 #include "../games/game.h"
 #include "../movelist.h"
 
-class Evaluator;
+class Collector;
 
 enum GameState : int8_t {
     ONGOING, LOSS, DRAW, WIN
@@ -79,10 +79,10 @@ public:
 public:
     Node(Node* p, uint8_t idx): parent(p), index(idx) {}
 
-    void search(Position& pos, Evaluator& eval, const SearchParameters& params, float c);
+    void search(Position& pos, Collector& eval, const SearchParameters& params, float c);
 
     Node* select(float c);
-    void  expand(Position& pos, Evaluator& eval);
+    void  expand(Position& pos, Collector& eval);
     void  backpropagate(double score);
     void  backpropagateMate(Node* child);
     void  virtualLoss(bool undo);

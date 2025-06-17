@@ -9,55 +9,101 @@
 #include "node.h"
 #include "../network/network.h"
 
+struct CollectedData {
+    int* inputIndices;
+    int* policyIndices;
+    float* temperatures;
+
+    Node** nodes;
+
+    int idx = 0;
+    const int batchSize;
+    bool forwardEarly = false;
+
+    CollectedData(int bs) : batchSize(bs) {
+        inputIndices  = (int*  ) malloc(batchSize * 32  * sizeof(int  ));
+        policyIndices = (int*  ) malloc(batchSize * 218 * sizeof(int  ));
+        temperatures  = (float*) malloc(batchSize *       sizeof(float));
+
+        nodes = (Node**) malloc(batchSize * sizeof(Node*));
+
+        memset(policyIndices, -1, 218 * sizeof(int  ) * batchSize);
+        memset(inputIndices , -1, 32  * sizeof(int  ) * batchSize);
+        memset(temperatures ,  0,       sizeof(float) * batchSize);
+    }
+
+    ~CollectedData() {
+        free(inputIndices);
+        free(policyIndices);
+        free(temperatures);
+
+        free(nodes);
+    }
+
+    void writeInputIndices(Position& pos);
+    void writePolicyIndices(Position& pos, MoveList& ml);
+    void pushBack(Node* node, Position& pos, MoveList& ml, float temp);
+
+    void clear() {
+        idx = 0;
+    }
+
+    bool isFull() {
+        return idx >= batchSize;
+    }
+};
+
+class Collector {
+private:
+    std::array<CollectedData, 2> data;
+
+    bool activeHalf = 0;
+
+public:
+    Collector(int batchSize) : data({ CollectedData(batchSize), CollectedData(batchSize) }) {}
+
+    CollectedData& getHalf(bool active);
+    void addNode(Node* node, Position& pos, MoveList& ml, float temp);
+
+    void switchActive() {
+        activeHalf = !activeHalf;
+    }
+
+    void earlyFull() {
+        data[activeHalf].forwardEarly = true;
+    }
+};
+
 class Evaluator {
 private:
     Network* net;
 
     const int batchSize;
-    std::array<int*, 2> policyIndices;
-    std::array<int*, 2> valueIndices;
-
-    std::atomic<int8_t> activeHalf;
-
-    std::array<std::vector<Node*>, 2> nodes;
 
     std::mutex mtx;
     std::condition_variable cv;
 
     std::thread evaluationThread;
 
+    Collector collector;
+
     bool batchReady;
     bool evaluating;
 
-    float temp;
-
-    void writeValueIndices(Position& pos, bool half);
-    void writePolicyIndices(Position& pos, MoveList& ml, bool half);
     void forwardInternal();
 
 public:
-    void addNode(Position& pos, MoveList& ml, Node* node);
     void forward(float temperature = 1.0f);
     void forwardBlocking(float temperature = 1.0f);
 
-    Evaluator(int bs) : batchSize(bs) {
-        policyIndices[0] = (int*) malloc(218 * sizeof(int) * batchSize);
-        policyIndices[1] = (int*) malloc(218 * sizeof(int) * batchSize);
-         valueIndices[0] = (int*) malloc( 32 * sizeof(int) * batchSize);
-         valueIndices[1] = (int*) malloc( 32 * sizeof(int) * batchSize);
+    Collector& getCollector() {
+        return collector;
+    }
 
-        memset(policyIndices[0], -1, sizeof(218 * sizeof(int) * batchSize));
-        memset(policyIndices[1], -1, sizeof(218 * sizeof(int) * batchSize));
-
+    Evaluator(int bs) : batchSize(bs), collector(Collector(bs)) {
         net = new Network(batchSize);
 
         net->loadWeights("test256.bin");
-
-        activeHalf = evaluating = batchReady = 0;
-        temp = 1.0f;
-
-        nodes[0].reserve(batchSize);
-        nodes[1].reserve(batchSize);
 
         evaluationThread = std::thread(
             [&] {

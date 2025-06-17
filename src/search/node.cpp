@@ -3,12 +3,12 @@
 #include "evaluator.h"
 #include "parameters.h"
 
-void Node::search(Position& pos, Evaluator& eval, const SearchParameters& params, float c) {
+void Node::search(Position& pos, Collector& collector, const SearchParameters& params, float c) {
     if (!visits.load(std::memory_order_relaxed))
-        return expand(pos, eval);
+        return expand(pos, collector);
 
     if (info.waiting())
-        return eval.forwardBlocking();
+        return collector.earlyFull();
 
     if (info.state() != ONGOING && !info.ply())
         return backpropagate(info.state() == WIN ? -1.0 : (info.state() == LOSS ? 1.0 : 0.0));
@@ -20,7 +20,7 @@ void Node::search(Position& pos, Evaluator& eval, const SearchParameters& params
 
     pos.makeMove(toSearch->getMove());
 
-    toSearch->search(pos, eval, params, params.cpuct);
+    toSearch->search(pos, collector, params, params.cpuct);
 }
 
 double Node::uct(uint64_t parentVisits, float c, double parentQ) {
@@ -62,7 +62,7 @@ Node* Node::select(float c) {
     return children + bestIndex;
 }
 
-void Node::expand(Position& pos, Evaluator& eval) {
+void Node::expand(Position& pos, Collector& collector) {
     MoveList ml; 
     pos.generateMoves(ml);
 
@@ -83,7 +83,7 @@ void Node::expand(Position& pos, Evaluator& eval) {
 
     createEdges(ml);
 
-    eval.addNode(pos, ml, this);
+    collector.addNode(this, pos, ml, 1.0f);
 }
 
 void Node::backpropagate(double score) {

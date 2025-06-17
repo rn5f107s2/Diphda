@@ -5,11 +5,11 @@
 #include <chrono>
 
 void Evaluator::forwardInternal() {
-    bool half = !activeHalf.load(std::memory_order_relaxed);
+    CollectedData& data = collector.getHalf(false);
 
-    net->forward(valueIndices[half], policyIndices[half]);
+    net->forward(data.inputIndices, data.policyIndices);
 
-    for (int i = 0; i < nodes[half].size(); i++) {
+    for (int i = 0; i < data.idx; i++) {
         float* value = net->getValue(i);
 
         //float w = std::exp(value[2] / 2);
@@ -22,22 +22,34 @@ void Evaluator::forwardInternal() {
 
         float q = std::tanh(value[0] / 2);
 
-        nodes[half][i]->virtualLoss(true);
-        nodes[half][i]->backpropagate(-q);
-        nodes[half][i]->labelPolicies(net->getPolicy(i), temp);
+        data.nodes[i]->virtualLoss(true);
+        data.nodes[i]->backpropagate(-q);
+        data.nodes[i]->labelPolicies(net->getPolicy(i), data.temperatures[i]);
 
-        nodes[half][i]->info.waiting(false);
+        data.nodes[i]->info.waiting(false);
     }
 
-    nodes[half].clear();
+    data.forwardEarly = false;
+
+    data.clear();
 }
 
-void Evaluator::writeValueIndices(Position& pos, bool half) {
-    pos.toChess768Dense(valueIndices[half] + 32 * nodes[half].size());
+void CollectedData::pushBack(Node* node, Position& pos, MoveList& ml, float temp) {
+    nodes       [idx] = node;
+    temperatures[idx] = temp;
+
+    writeInputIndices(pos);
+    writePolicyIndices(pos, ml);
+
+    idx++;
 }
 
-void Evaluator::writePolicyIndices(Position& pos, MoveList& ml, bool half){
-    int* indices = policyIndices[half] + 218 * nodes[half].size();
+void CollectedData::writeInputIndices(Position& pos) {
+    pos.toChess768Dense(inputIndices + 32 * idx);
+}
+
+void CollectedData::writePolicyIndices(Position& pos, MoveList& ml){
+    int* indices = policyIndices + 218 * idx;
 
     for (int i = 0; i < ml.length(); i++)
         indices[i] = pos.indexOf(ml[i]);
@@ -45,28 +57,23 @@ void Evaluator::writePolicyIndices(Position& pos, MoveList& ml, bool half){
     memset(indices + ml.length(), -1, (218 - ml.length()) * sizeof(int));
 }
 
-void Evaluator::addNode(Position& pos, MoveList& ml, Node* node) {
-    bool half = activeHalf.load(std::memory_order_relaxed);
+CollectedData& Collector::getHalf(bool active) {
+    return active ? data[activeHalf] : data[!activeHalf];
+}
 
+void Collector::addNode(Node* node, Position& pos, MoveList& ml, float temp) {
     node->info.waiting(true);
     node->virtualLoss(false);
 
-    writeValueIndices(pos, half);
-    writePolicyIndices(pos, ml, half);
-
-    nodes[half].push_back(node);
-
-    if (nodes[half].size() == batchSize)
-        forward();
+    data[activeHalf].pushBack(node, pos, ml, temp);
 }
 
 void Evaluator::forward(float temperature) {
     std::unique_lock<std::mutex> lk(mtx);
     cv.wait(lk, [&] { return !evaluating; } );
 
-    activeHalf.fetch_xor(1, std::memory_order_relaxed);
+    collector.switchActive();
     batchReady = evaluating = true;
-    temp = temperature;
 
     lk.unlock();
     cv.notify_one();
