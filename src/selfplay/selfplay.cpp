@@ -36,7 +36,7 @@ void SelfplaySearcher::prepareRoot() {
     if (!root->edges)
         root->createEdges(ml);
 
-    evaluator->addNode(pos, ml, root, params.root_pst);
+    evaluator->getCollector().addNode(root, pos, ml, params.root_pst);
 
     rootReady = true;   
 }
@@ -71,7 +71,7 @@ void SelfplaySearcher::doPlayout() {
     Node* rp = root->parent;
     root->parent = nullptr;
 
-    root->search(copy, *evaluator, params, params.root_cpuct);
+    root->search(copy, evaluator->getCollector(), params, params.root_cpuct);
     nodes++;
 
     root->parent = rp;

@@ -137,11 +137,7 @@ void Searcher::prepareNewRoot(Position& pos) {
     if (!root->visits)
         root->createEdges(ml);
         
-<<<<<<< HEAD
     evaluator->getCollector().addNode(root, pos, ml, params.root_pst);
-=======
-    evaluator->addNode(pos, ml, root, params.root_pst);
->>>>>>> af66e9b (temp)
 
     evaluator->forwardBlocking();
 }

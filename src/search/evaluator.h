@@ -93,8 +93,8 @@ private:
     void forwardInternal();
 
 public:
-    void forward(float temperature = 1.0f);
-    void forwardBlocking(float temperature = 1.0f);
+    void forward();
+    void forwardBlocking();
 
     Collector& getCollector() {
         return collector;
