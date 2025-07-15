@@ -13,8 +13,8 @@ enum Result : int8_t {
 #pragma pack(push, 1)
 
 class MoveInfo {
-    int8_t nMoves;
-    int8_t playedIdx;
+    uint8_t nMoves;
+    uint8_t playedIdx;
 
     float rootQ;
 
@@ -23,7 +23,7 @@ class MoveInfo {
     std::array<uint32_t, 218> visits;
 
 public:
-    MoveInfo(Node* root, int playedIdx);
+    MoveInfo(Node* root, uint8_t playedIdx);
 
     friend std::ostream& operator<<(std::ostream& stream, const MoveInfo& mi);
 };

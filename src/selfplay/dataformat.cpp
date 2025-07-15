@@ -1,10 +1,18 @@
 #include "dataformat.h"
 
-MoveInfo::MoveInfo(Node* n, int playIdx) {
-    
+MoveInfo::MoveInfo(Node* n, uint8_t playIdx) {
+    playedIdx = playIdx;
+
+    rootQ = n->getQ();
+
+    for (int i = 0; i < n->childCount; i++) {
+        qValues[i] = n->children[i].getQ();
+        visits [i] = n->children[i].visits; 
+    }
 }
 
 void GameRecord::pushBack(MoveInfo mi) {
+    movecount++;
     moves.push_back(std::move(mi));
 }
 
@@ -39,6 +47,7 @@ std::ostream& operator<<(std::ostream& stream, const MoveInfo& mi) {
 }
 
 std::ostream& operator<<(std::ostream& stream, const GameRecord& gr) {
+    std::cout << gr.result << " " << gr.movecount << std::endl;
     stream << gr.result << gr.movecount;
     
     for (int i = 0; i < gr.movecount; i++)

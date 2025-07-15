@@ -38,7 +38,8 @@ void SelfplayManager::collectNode(int gameIdx) {
 
     if (game.isTerminal()) {
         record.setResult(game.ww(), game.d(), game.wl());
-        outFile << record;
+
+        outFile << record << std::flush;
 
         record.clear();
 
