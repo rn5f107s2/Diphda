@@ -7,7 +7,7 @@ struct SelfplayParmeters {
     int playouts = 5000;
 
     int   tempDropMoveCount = 45;
-    float initialTemp = 1.0f;
+    float initialTemp = 0.9f;
     float postDropTemp = 0.1f;
 
     float dirichletAlpha = 0.3;

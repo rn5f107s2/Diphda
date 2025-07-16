@@ -1,6 +1,8 @@
 #include "dataformat.h"
 
 MoveInfo::MoveInfo(Node* n, uint8_t playIdx) {
+    nMoves = n->childCount;
+
     playedIdx = playIdx;
 
     rootQ = n->getQ();
@@ -35,20 +37,20 @@ void GameRecord::clear() {
 }
 
 std::ostream& operator<<(std::ostream& stream, const MoveInfo& mi) {
-    stream << mi.nMoves << mi.playedIdx << mi.rootQ;
-    
-    for (int i = 0; i < mi.nMoves; i++)
-        stream << mi.qValues[i] << std::endl;
+    stream.write(reinterpret_cast<const char*>(&mi.nMoves), sizeof(uint8_t));
+    stream.write(reinterpret_cast<const char*>(&mi.playedIdx), sizeof(uint8_t));
+    stream.write(reinterpret_cast<const char*>(&mi.rootQ), sizeof(float));
 
-    for (int i = 0; i < mi.nMoves; i++)
-        stream << mi.visits[i] << std::endl;
+    stream.write(reinterpret_cast<const char*>(&mi.qValues[0]), sizeof(float) * mi.nMoves);
+
+    stream.write(reinterpret_cast<const char*>(&mi.visits[0]), sizeof(uint32_t) * mi.nMoves);
 
     return stream;
 }
 
 std::ostream& operator<<(std::ostream& stream, const GameRecord& gr) {
-    std::cout << gr.result << " " << gr.movecount << std::endl;
-    stream << gr.result << gr.movecount;
+    stream.write(reinterpret_cast<const char*>(&gr.result), sizeof(int8_t));
+    stream.write(reinterpret_cast<const char*>(&gr.movecount), sizeof(int));
     
     for (int i = 0; i < gr.movecount; i++)
         stream << gr.moves[i];
