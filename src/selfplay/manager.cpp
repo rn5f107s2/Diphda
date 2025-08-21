@@ -64,6 +64,9 @@ void SelfplayManager::run() {
             auto npms    = nodesSearched / std::chrono::duration_cast<std::chrono::milliseconds>(current - begin).count();
 
             std::cout << "NPS: " << npms * 1000 << std::endl;
+
+            begin = std::chrono::steady_clock::now();
+            nodesSearched = 0;
         }
     }
 }

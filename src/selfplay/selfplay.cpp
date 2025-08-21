@@ -12,16 +12,7 @@ void SelfplaySearcher::playMove(Move m) {
 
     pos.makeMove(m);
 
-    Node* newRoot = nullptr;
-
-    for (int i = 0; i < root->childCount; i++) {
-        if (root->children[i].getMove().toString() == m.toString())
-            newRoot = root->children + i;
-        else
-            root->children[i].deallocate();
-    }
-
-    root = newRoot;
+    cleanupRoot();
 
     // generate moves for accurate terminal detection
     MoveList ml; pos.generateMoves(ml);

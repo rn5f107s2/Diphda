@@ -1,10 +1,10 @@
 #pragma once
 
 struct SelfplayParmeters {
-    int maxConcurrentGames = 2;
-    int maxMiniBatchSize   = 300;
+    int maxConcurrentGames = 1000;
+    int maxMiniBatchSize   = 500;
 
-    int playouts = 5000;
+    int playouts = 800;
 
     int   tempDropMoveCount = 45;
     float initialTemp = 0.9f;
