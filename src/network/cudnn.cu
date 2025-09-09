@@ -118,24 +118,16 @@ void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* v
     cudaDeviceSynchronize();
 
     float* p = fcp1.forward(d_denseInput);
-    cudaDeviceSynchronize();
     p = fcp2.forward(p);
-    cudaDeviceSynchronize();
-
 
     blocks = ((218 * batchSize) + 255) / 256;
-    mask<<<blocks, 256>>>(p, d_policySparseOutput, d_policyMask, batchSize * 218);
-    cudaDeviceSynchronize();
-
+    mask<<<blocks, 256, 0, policyStream>>>(p, d_policySparseOutput, d_policyMask, batchSize * 218);
 
     float* v = fcv1.forward(d_denseInput);
-    cudaDeviceSynchronize();
-
-    float temp[1024];
-    cudaMemcpy(temp, v, 1024 * 4, cudaMemcpyDeviceToHost);
-
     v = fcv2.forward(v);
-    cudaDeviceSynchronize();
+    
+    cudaStreamSynchronize(valueStream);
+    cudaStreamSynchronize(policyStream);
 
     cudaMemcpy(valueOutput, v, batchSize * 1 * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(policyOutput, d_policySparseOutput, batchSize * 218 * sizeof(float), cudaMemcpyDeviceToHost);
