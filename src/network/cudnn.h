@@ -43,7 +43,11 @@ struct CudNNNetwork {
     FullyConnectedLayer fcv1;
     FullyConnectedLayer fcv2;
 
-    cudnnHandle_t handle;
+    cudnnHandle_t valueHandle;
+    cudnnHandle_t policyHandle;
+
+    cudaStream_t valueStream;
+    cudaStream_t policyStream;
 
     float* d_denseInput, *d_policySparseOutput;
 
@@ -51,11 +55,18 @@ struct CudNNNetwork {
 
     int batchSize;
 
-    CudNNNetwork(int bs, float* policyWeights, float* valueWeights) : fcp1(FullyConnectedLayer(handle, bs, 768, 256)),
-                                                                      fcp2(FullyConnectedLayer(handle, bs, 256, 4096, false)),
-                                                                      fcv1(FullyConnectedLayer(handle, bs, 768, 1024)),
-                                                                      fcv2(FullyConnectedLayer(handle, bs, 1024, 1, false)) {
-        cudnnCreate(&handle);
+    CudNNNetwork(int bs, float* policyWeights, float* valueWeights) : fcp1(FullyConnectedLayer(policyHandle, bs, 768, 256)),
+                                                                      fcp2(FullyConnectedLayer(policyHandle, bs, 256, 4096, false)),
+                                                                      fcv1(FullyConnectedLayer(valueHandle , bs, 768, 1024)),
+                                                                      fcv2(FullyConnectedLayer(valueHandle , bs, 1024, 1, false)) {
+        cudnnCreate(&policyHandle);
+        cudnnCreate(&valueHandle);
+
+        cudaStreamCreate(&valueStream);
+        cudaStreamCreate(&policyStream);
+
+        cudnnSetStream(policyHandle, policyStream);
+        cudnnSetStream(valueHandle , valueStream );
 
         fcp1.loadWeights(policyWeights, policyWeights + (768 * 256));
         fcp2.loadWeights(policyWeights + (768 * 256) + 256, policyWeights + (768 * 256) + 256 + (256 * 4096));
