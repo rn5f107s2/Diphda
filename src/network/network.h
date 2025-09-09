@@ -7,6 +7,9 @@
 #include <fstream>
 #include <iostream>
 #include <cuda_runtime.h>
+#include <cudnn.h>
+
+#include "cudnn.h"
 
 struct CudaNetwork {
     const int batchSize;
@@ -68,7 +71,7 @@ public:
         if (cudaNetwork)
             delete cudaNetwork;
 
-        cudaNetwork = new CudaNetwork(batchSize, policyWeights, valueWeights);
+        cudaNetwork = new CudNNNetwork(batchSize, policyWeights, valueWeights);
 
         free(policyWeights);
         free(valueWeights);
@@ -85,5 +88,5 @@ private:
     const int policyLayer1Size = 256;
     const int policyLayer2Size = 4096;
 
-    CudaNetwork* cudaNetwork = nullptr;
+    CudNNNetwork* cudaNetwork = nullptr;
 };
