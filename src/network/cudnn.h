@@ -7,9 +7,9 @@ __global__ void densify(int* sparse, float* dense, int N, int out, int bs);
 __global__ void mask(float* inputs, float* outputs, int* mask);
 
 struct ConvLayer {
-    const int batchSize, inChannels, outChannels, kernelWidth, kernelHeight, height, width;
-
     const cudnnHandle_t& handle;
+
+    const int batchSize, inChannels, outChannels, kernelWidth, kernelHeight, height, width;
 
     float* d_weights, *d_biases, *d_workspace, *d_output;
 
@@ -37,10 +37,23 @@ struct FullyConnectedLayer {
     void loadWeights(float* weights, float* biases);
 };
 
+struct SparseInFullyConnectedLayer {
+    const cudnnHandle_t& handle;
+
+    const int batchSize, inSize, outSize;
+
+    float* d_weights, *d_biases, *d_output;
+
+    SparseInFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os);
+
+    float* forward(int* d_input);
+    void loadWeights(float* weights, float* biases);
+};
+
 struct CudNNNetwork {
-    FullyConnectedLayer fcp1;
+    SparseInFullyConnectedLayer fcp1;
     FullyConnectedLayer fcp2;
-    FullyConnectedLayer fcv1;
+    SparseInFullyConnectedLayer fcv1;
     FullyConnectedLayer fcv2;
 
     cudnnHandle_t valueHandle;
@@ -55,9 +68,9 @@ struct CudNNNetwork {
 
     int batchSize;
 
-    CudNNNetwork(int bs, float* policyWeights, float* valueWeights) : fcp1(FullyConnectedLayer(policyHandle, bs, 768, 256)),
+    CudNNNetwork(int bs, float* policyWeights, float* valueWeights) : fcp1(SparseInFullyConnectedLayer(policyHandle, bs, 768, 256)),
                                                                       fcp2(FullyConnectedLayer(policyHandle, bs, 256, 4096, false)),
-                                                                      fcv1(FullyConnectedLayer(valueHandle , bs, 768, 1024)),
+                                                                      fcv1(SparseInFullyConnectedLayer(valueHandle , bs, 768, 1024)),
                                                                       fcv2(FullyConnectedLayer(valueHandle , bs, 1024, 1, false)) {
         cudnnCreate(&policyHandle);
         cudnnCreate(&valueHandle);
@@ -83,3 +96,7 @@ struct CudNNNetwork {
 
     void forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput);
 };
+
+inline int ceildiv(int n, int m) {
+    return (n + m - 1) / m;
+}

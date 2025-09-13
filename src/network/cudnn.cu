@@ -28,6 +28,29 @@ __global__ void mask(float* inputs, float* outputs, int* mask, int maxTId) {
         outputs[threadId] = inputs[mask[threadId]];
 }
 
+__global__ void fcfwbatchedrelusparsein(int batchSize, int* in, int nIn, int out, float* output, float* weights, float* biases) {
+    int threadId = blockDim.x * blockIdx.x + threadIdx.x;
+    int batch    = threadId / out;
+    int idx      = threadId % out;
+
+    if (batch >= batchSize)
+        return;
+
+    output[batch * out + idx] = biases[idx];
+
+    for (int i = 0; i < nIn; i++) {
+        int inIdx = in[i + batch * nIn];
+
+        if (inIdx == -1)
+            break;
+
+        output[batch * out + idx] += weights[inIdx * out + idx];
+    }
+
+    if (output[batch * out + idx] < 0)
+        output[batch * out + idx] = 0;
+}
+
 ConvLayer::ConvLayer(cudnnHandle_t& hndl, int bs, int ic, int oc, int kw, int kh, int h, int w, bool activate) : handle(hndl),
                                                                                                                  batchSize(bs), 
                                                                                                                  inChannels(ic),
@@ -105,6 +128,36 @@ float* FullyConnectedLayer::forward(float* d_input) {
     return cl.forward(d_input);
 }
 
+SparseInFullyConnectedLayer::SparseInFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os) : handle(hndl), batchSize(bs), inSize(is), outSize(os) {
+    cudaMalloc(&d_weights, inSize * outSize * sizeof(float));
+    cudaMalloc(&d_biases, outSize * sizeof(float));
+    cudaMalloc(&d_output, outSize * batchSize * sizeof(float));
+}
+
+void SparseInFullyConnectedLayer::loadWeights(float* weights, float* biases) {
+    cudaMemcpy(d_biases, biases, outSize * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_weights, weights, inSize * outSize * sizeof(float), cudaMemcpyHostToDevice);
+}
+
+float* SparseInFullyConnectedLayer::forward(int* d_input) {
+    int threads = 256;
+    int blocks = ceildiv(batchSize * outSize, threads);
+
+    cudaStream_t stream; 
+    
+    cudnnGetStream(handle, &stream);
+
+    fcfwbatchedrelusparsein<<<blocks, threads, 0, stream>>>(batchSize,
+                                                            d_input,
+                                                            32,
+                                                            outSize, 
+                                                            d_output, 
+                                                            d_weights, 
+                                                            d_biases);
+
+    return d_output;
+}
+
 void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput) {
     cudaMemcpy(d_sparseInput, inputIndices, sizeof(int) * batchSize * 32, cudaMemcpyHostToDevice);
     cudaMemcpy(d_policyMask, policyOutputIndices, sizeof(int) * batchSize * 218, cudaMemcpyHostToDevice);
@@ -117,13 +170,13 @@ void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* v
 
     cudaDeviceSynchronize();
 
-    float* p = fcp1.forward(d_denseInput);
+    float* p = fcp1.forward(d_sparseInput);
     p = fcp2.forward(p);
 
     blocks = ((218 * batchSize) + 255) / 256;
     mask<<<blocks, 256, 0, policyStream>>>(p, d_policySparseOutput, d_policyMask, batchSize * 218);
 
-    float* v = fcv1.forward(d_denseInput);
+    float* v = fcv1.forward(d_sparseInput);
     v = fcv2.forward(v);
     
     cudaStreamSynchronize(valueStream);
