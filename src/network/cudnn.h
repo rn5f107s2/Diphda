@@ -50,9 +50,22 @@ struct SparseInFullyConnectedLayer {
     void loadWeights(float* weights, float* biases);
 };
 
+struct SparseOutFullyConnectedLayer {
+    const cudnnHandle_t& handle;
+
+    const int batchSize, inSize, outSize;
+
+    float* d_weights, *d_biases, *d_output;
+
+    SparseOutFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os);
+
+    float* forward(float* d_input, int* d_mask);
+    void loadWeights(float* weights, float* biases);
+};
+
 struct CudNNNetwork {
     SparseInFullyConnectedLayer fcp1;
-    FullyConnectedLayer fcp2;
+    SparseOutFullyConnectedLayer fcp2;
     SparseInFullyConnectedLayer fcv1;
     FullyConnectedLayer fcv2;
 
@@ -69,7 +82,7 @@ struct CudNNNetwork {
     int batchSize;
 
     CudNNNetwork(int bs, float* policyWeights, float* valueWeights) : fcp1(SparseInFullyConnectedLayer(policyHandle, bs, 768, 256)),
-                                                                      fcp2(FullyConnectedLayer(policyHandle, bs, 256, 4096, false)),
+                                                                      fcp2(SparseOutFullyConnectedLayer(policyHandle, bs, 256, 4096)),
                                                                       fcv1(SparseInFullyConnectedLayer(valueHandle , bs, 768, 1024)),
                                                                       fcv2(FullyConnectedLayer(valueHandle , bs, 1024, 1, false)) {
         cudnnCreate(&policyHandle);
