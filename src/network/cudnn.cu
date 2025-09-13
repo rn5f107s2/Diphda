@@ -51,6 +51,26 @@ __global__ void fcfwbatchedrelusparsein(int batchSize, int* in, int nIn, int out
         output[batch * out + idx] = 0;
 }
 
+__global__ void fcfwbatchedsparseout(int batchSize, int in, int* out, int nOut, int outSize, float* input, float* output, float* weights, float* biases) {
+    int threadId = blockDim.x * blockIdx.x + threadIdx.x;
+    int batch    = threadId / nOut;
+
+    if (batch >= batchSize)
+        return;
+
+    int idx    = threadId % nOut;
+    int outIdx = out[idx + nOut * batch];
+    
+    if (outIdx == -1)
+        return;
+
+    output[batch * nOut + idx] = biases[outIdx];
+
+    for (int i = 0; i < in; i++)
+        output[batch * nOut + idx] += weights[i * outSize + outIdx] * input[batch * in + i];
+}
+
+
 ConvLayer::ConvLayer(cudnnHandle_t& hndl, int bs, int ic, int oc, int kw, int kh, int h, int w, bool activate) : handle(hndl),
                                                                                                                  batchSize(bs), 
                                                                                                                  inChannels(ic),
@@ -158,6 +178,38 @@ float* SparseInFullyConnectedLayer::forward(int* d_input) {
     return d_output;
 }
 
+SparseOutFullyConnectedLayer::SparseOutFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os) : handle(hndl), batchSize(bs), inSize(is), outSize(os) {
+    cudaMalloc(&d_weights, inSize * outSize * sizeof(float));
+    cudaMalloc(&d_biases, outSize * sizeof(float));
+    cudaMalloc(&d_output, 218 * batchSize * sizeof(float));
+}
+
+void SparseOutFullyConnectedLayer::loadWeights(float* weights, float* biases) {
+    cudaMemcpy(d_biases, biases, outSize * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_weights, weights, inSize * outSize * sizeof(float), cudaMemcpyHostToDevice);
+}
+
+float* SparseOutFullyConnectedLayer::forward(float* d_input, int* d_mask) {
+    int threads = 256;
+    int blocks = ceildiv(batchSize * 218, threads);
+
+    cudaStream_t stream; 
+    
+    cudnnGetStream(handle, &stream);
+
+    fcfwbatchedsparseout<<<blocks, threads, 0, stream>>>(batchSize, 
+                                                         inSize, 
+                                                         d_mask, 
+                                                         218, 
+                                                         outSize, 
+                                                         d_input, 
+                                                         d_output, 
+                                                         d_weights, 
+                                                         d_biases);
+
+    return d_output;
+}
+
 void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput) {
     cudaMemcpy(d_sparseInput, inputIndices, sizeof(int) * batchSize * 32, cudaMemcpyHostToDevice);
     cudaMemcpy(d_policyMask, policyOutputIndices, sizeof(int) * batchSize * 218, cudaMemcpyHostToDevice);
@@ -165,16 +217,8 @@ void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* v
 
     cudaDeviceSynchronize();
 
-    int blocks = ((32 * batchSize) + 255) / 256;
-    densify<<<blocks, 256>>>(d_sparseInput, d_denseInput, 32, 768, batchSize);
-
-    cudaDeviceSynchronize();
-
     float* p = fcp1.forward(d_sparseInput);
-    p = fcp2.forward(p);
-
-    blocks = ((218 * batchSize) + 255) / 256;
-    mask<<<blocks, 256, 0, policyStream>>>(p, d_policySparseOutput, d_policyMask, batchSize * 218);
+    p = fcp2.forward(p, d_policyMask);
 
     float* v = fcv1.forward(d_sparseInput);
     v = fcv2.forward(v);
@@ -183,5 +227,5 @@ void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* v
     cudaStreamSynchronize(policyStream);
 
     cudaMemcpy(valueOutput, v, batchSize * 1 * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(policyOutput, d_policySparseOutput, batchSize * 218 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(policyOutput, p, batchSize * 218 * sizeof(float), cudaMemcpyDeviceToHost);
 }
