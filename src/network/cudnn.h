@@ -9,6 +9,18 @@ public:
     virtual void loadWeights(float* weights) = 0;
 };
 
+class SparseLayer {
+public:
+    virtual float* forward(int* d_input) = 0;
+    virtual void loadWeights(float* weights) = 0;
+};
+
+class MaskedLayer {
+public:
+    virtual float* forward(float* d_input, int* d_mask) = 0;
+    virtual void loadWeights(float* weights) = 0;
+};
+
 class ConvLayer : public DenseLayer {
     const cudnnHandle_t& handle;
 
@@ -56,36 +68,38 @@ public:
     void loadWeights(float* weights) override;
 };
 
-struct SparseInFullyConnectedLayer {
+struct SparseInFullyConnectedLayer : public SparseLayer {
     const cudnnHandle_t& handle;
 
     const int batchSize, inSize, outSize;
 
     float* d_weights, *d_biases, *d_output;
 
+public:
     SparseInFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os);
 
-    float* forward(int* d_input);
-    void loadWeights(float* weights, float* biases);
+    float* forward(int* d_input) override;
+    void loadWeights(float* weights) override;
 };
 
-struct SparseOutFullyConnectedLayer {
+struct MaskedFullyConnectedLayer : public MaskedLayer {
     const cudnnHandle_t& handle;
 
     const int batchSize, inSize, outSize;
 
     float* d_weights, *d_biases, *d_output;
 
-    SparseOutFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os);
+public:
+    MaskedFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os);
 
-    float* forward(float* d_input, int* d_mask);
-    void loadWeights(float* weights, float* biases);
+    float* forward(float* d_input, int* d_mask) override;
+    void loadWeights(float* weights) override;
 };
 
 struct CudNNNetwork {
-    SparseInFullyConnectedLayer fcp1;
-    SparseOutFullyConnectedLayer fcp2;
-    SparseInFullyConnectedLayer fcv1;
+    SparseLayer* fcp1;
+    MaskedLayer* fcp2;
+    SparseLayer* fcv1;
     DenseLayer* fcv2;
 
     cudnnHandle_t valueHandle;
@@ -100,9 +114,9 @@ struct CudNNNetwork {
 
     int batchSize;
 
-    CudNNNetwork(int bs, float* policyWeights, float* valueWeights) : fcp1(SparseInFullyConnectedLayer(policyHandle, bs, 768, 256)),
-                                                                      fcp2(SparseOutFullyConnectedLayer(policyHandle, bs, 256, 4096)),
-                                                                      fcv1(SparseInFullyConnectedLayer(valueHandle , bs, 768, 1024)),
+    CudNNNetwork(int bs, float* policyWeights, float* valueWeights) : fcp1(new SparseInFullyConnectedLayer(policyHandle, bs, 768, 256)),
+                                                                      fcp2(new MaskedFullyConnectedLayer(policyHandle, bs, 256, 4096)),
+                                                                      fcv1(new SparseInFullyConnectedLayer(valueHandle , bs, 768, 1024)),
                                                                       fcv2(new FullyConnectedLayerCUDA(valueHandle , bs, 1024, 1)) {
         cudnnCreate(&policyHandle);
         cudnnCreate(&valueHandle);
@@ -113,9 +127,9 @@ struct CudNNNetwork {
         cudnnSetStream(policyHandle, policyStream);
         cudnnSetStream(valueHandle , valueStream );
 
-        fcp1.loadWeights(policyWeights, policyWeights + (768 * 256));
-        fcp2.loadWeights(policyWeights + (768 * 256) + 256, policyWeights + (768 * 256) + 256 + (256 * 4096));
-        fcv1.loadWeights(valueWeights, valueWeights + (768 * 1024));
+        fcp1->loadWeights(policyWeights);
+        fcp2->loadWeights(policyWeights + (768 * 256) + 256);
+        fcv1->loadWeights(valueWeights);
         fcv2->loadWeights(valueWeights + (768 * 1024) + 1024);
 
         cudaMalloc(&d_denseInput, 768 * sizeof(float) * bs);
