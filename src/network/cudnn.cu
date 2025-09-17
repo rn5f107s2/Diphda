@@ -114,9 +114,11 @@ ConvLayer::ConvLayer(cudnnHandle_t& hndl, int bs, int ic, int oc, int kw, int kh
     cudaMalloc(&d_weights, inChannels * outChannels * kernelHeight * kernelWidth * sizeof(float));
 }
 
-void ConvLayer::loadWeights(float* weights, float* biases) {
-    cudaMemcpy(d_biases, biases, outChannels * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_weights, weights, inChannels * outChannels * kernelHeight * kernelWidth * sizeof(float), cudaMemcpyHostToDevice);
+void ConvLayer::loadWeights(float* weights) {
+    int nWeights = inChannels * outChannels * kernelHeight * kernelWidth;
+
+    cudaMemcpy(d_weights, weights, nWeights * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_biases, weights + nWeights, outChannels * sizeof(float), cudaMemcpyHostToDevice);
 }
 
 float* ConvLayer::forward(float* d_input) {
@@ -141,8 +143,8 @@ FullyConnectedLayer::FullyConnectedLayer(cudnnHandle_t& hndl, int bs, int inSize
       in(inSize),
       out(outSize) {}
 
-void FullyConnectedLayer::loadWeights(float* weights, float* biases) {
-    float* wT = (float*) malloc(in * out * sizeof(float));
+void FullyConnectedLayer::loadWeights(float* weights) {
+    float* wT = (float*) malloc((in * out + out) * sizeof(float));
 
     for (int i = 0; i < in; i++)
         for (int j = 0; j < out; j++) {
@@ -152,7 +154,10 @@ void FullyConnectedLayer::loadWeights(float* weights, float* biases) {
             wT[i2] = weights[i1];
         }
 
-    cl.loadWeights(wT, biases);
+    for (int i = in * out; i < in * out + out; i++)
+        wT[i] = weights[i];
+
+    cl.loadWeights(wT);
 
     free(wT);
 }
@@ -234,7 +239,7 @@ void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* v
     p = fcp2.forward(p, d_policyMask);
 
     float* v = fcv1.forward(d_sparseInput);
-    v = fcv2.forward(v);
+    v = fcv2->forward(v);
     
     cudaStreamSynchronize(valueStream);
     cudaStreamSynchronize(policyStream);
@@ -252,9 +257,11 @@ FullyConnectedLayerCUDA::FullyConnectedLayerCUDA(cudnnHandle_t& hndl, int bs, in
     cudaMalloc(&d_output, 218 * batchSize * sizeof(float));
 }
 
-void FullyConnectedLayerCUDA::loadWeights(float* weights, float* biases) {
-    cudaMemcpy(d_biases, biases, out * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_weights, weights, in * out * sizeof(float), cudaMemcpyHostToDevice);
+void FullyConnectedLayerCUDA::loadWeights(float* weights) {
+    int nWeights = in * out;
+
+    cudaMemcpy(d_weights, weights, nWeights * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_biases, weights + nWeights, out * sizeof(float), cudaMemcpyHostToDevice);
 }
 
 float* FullyConnectedLayerCUDA::forward(float* d_input) {
