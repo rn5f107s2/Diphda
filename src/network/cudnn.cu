@@ -172,9 +172,11 @@ SparseInFullyConnectedLayer::SparseInFullyConnectedLayer(cudnnHandle_t& hndl, in
     cudaMalloc(&d_output, outSize * batchSize * sizeof(float));
 }
 
-void SparseInFullyConnectedLayer::loadWeights(float* weights, float* biases) {
-    cudaMemcpy(d_biases, biases, outSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_weights, weights, inSize * outSize * sizeof(float), cudaMemcpyHostToDevice);
+void SparseInFullyConnectedLayer::loadWeights(float* weights) {
+    int nWeights = inSize * outSize;
+
+    cudaMemcpy(d_weights, weights, nWeights * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_biases, weights + nWeights, outSize * sizeof(float), cudaMemcpyHostToDevice);
 }
 
 float* SparseInFullyConnectedLayer::forward(int* d_input) {
@@ -196,18 +198,20 @@ float* SparseInFullyConnectedLayer::forward(int* d_input) {
     return d_output;
 }
 
-SparseOutFullyConnectedLayer::SparseOutFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os) : handle(hndl), batchSize(bs), inSize(is), outSize(os) {
+MaskedFullyConnectedLayer::MaskedFullyConnectedLayer(cudnnHandle_t& hndl, int bs, int is, int os) : handle(hndl), batchSize(bs), inSize(is), outSize(os) {
     cudaMalloc(&d_weights, inSize * outSize * sizeof(float));
     cudaMalloc(&d_biases, outSize * sizeof(float));
     cudaMalloc(&d_output, 218 * batchSize * sizeof(float));
 }
 
-void SparseOutFullyConnectedLayer::loadWeights(float* weights, float* biases) {
-    cudaMemcpy(d_biases, biases, outSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_weights, weights, inSize * outSize * sizeof(float), cudaMemcpyHostToDevice);
+void MaskedFullyConnectedLayer::loadWeights(float* weights) {
+    int nWeights = inSize * outSize;
+
+    cudaMemcpy(d_weights, weights, nWeights * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_biases, weights + nWeights, outSize * sizeof(float), cudaMemcpyHostToDevice);
 }
 
-float* SparseOutFullyConnectedLayer::forward(float* d_input, int* d_mask) {
+float* MaskedFullyConnectedLayer::forward(float* d_input, int* d_mask) {
     int threads = 256;
     int blocks = ceildiv(batchSize * 218, threads);
 
@@ -235,10 +239,10 @@ void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* v
 
     cudaDeviceSynchronize();
 
-    float* p = fcp1.forward(d_sparseInput);
-    p = fcp2.forward(p, d_policyMask);
+    float* p = fcp1->forward(d_sparseInput);
+    p = fcp2->forward(p, d_policyMask);
 
-    float* v = fcv1.forward(d_sparseInput);
+    float* v = fcv1->forward(d_sparseInput);
     v = fcv2->forward(v);
     
     cudaStreamSynchronize(valueStream);
