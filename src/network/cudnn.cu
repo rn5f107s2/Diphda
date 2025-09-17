@@ -70,6 +70,19 @@ __global__ void fcfwbatchedsparseout(int batchSize, int in, int* out, int nOut, 
         output[batch * nOut + idx] += weights[i * outSize + outIdx] * input[batch * in + i];
 }
 
+__global__ void fcfwbatched(int batchSize, int in, int out, float* input, float* output, float* weights, float* biases) {
+    int threadId = blockDim.x * blockIdx.x + threadIdx.x;
+    int batch    = threadId / out;
+    int idx      = threadId % out;
+
+    if (batch >= batchSize)
+        return;
+
+    output[batch * out + idx] = biases[idx];
+
+    for (int i = 0; i < in; i++)
+        output[batch * out + idx] += weights[i * out + idx] * input[batch * in + i];
+}
 
 ConvLayer::ConvLayer(cudnnHandle_t& hndl, int bs, int ic, int oc, int kw, int kh, int h, int w, bool activate) : handle(hndl),
                                                                                                                  batchSize(bs), 
@@ -229,3 +242,35 @@ void CudNNNetwork::forward(int* inputIndices, int* policyOutputIndices, float* v
     cudaMemcpy(valueOutput, v, batchSize * 1 * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(policyOutput, p, batchSize * 218 * sizeof(float), cudaMemcpyDeviceToHost);
 }
+
+FullyConnectedLayerCUDA::FullyConnectedLayerCUDA(cudnnHandle_t& hndl, int bs, int inSize, int outSize) : handle(hndl),
+                                                                                                         in(inSize), 
+                                                                                                         out(outSize),
+                                                                                                         batchSize(bs) {
+    cudaMalloc(&d_weights, inSize * outSize * sizeof(float));
+    cudaMalloc(&d_biases, outSize * sizeof(float));
+    cudaMalloc(&d_output, 218 * batchSize * sizeof(float));
+}
+
+void FullyConnectedLayerCUDA::loadWeights(float* weights, float* biases) {
+    cudaMemcpy(d_biases, biases, out * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_weights, weights, in * out * sizeof(float), cudaMemcpyHostToDevice);
+}
+
+float* FullyConnectedLayerCUDA::forward(float* d_input) {
+    int blocks = ceildiv(batchSize * out, 256);
+
+    cudaStream_t stream;
+    cudnnGetStream(handle, &stream);
+
+    fcfwbatched<<<blocks, 256, 0, stream>>>(batchSize, 
+                                            in, 
+                                            out, 
+                                            d_input, 
+                                            d_output, 
+                                            d_weights, 
+                                            d_biases);
+
+    return d_output;
+}
+

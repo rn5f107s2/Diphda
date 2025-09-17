@@ -3,9 +3,6 @@
 #include <cuda_runtime.h>
 #include <cudnn.h>
 
-__global__ void densify(int* sparse, float* dense, int N, int out, int bs);
-__global__ void mask(float* inputs, float* outputs, int* mask);
-
 struct ConvLayer {
     const cudnnHandle_t& handle;
 
@@ -32,6 +29,19 @@ struct FullyConnectedLayer {
     int in, out;
 
     FullyConnectedLayer(cudnnHandle_t& hndl, int bs, int inSize, int outSize, bool activate = true);
+
+    float* forward(float* d_input);
+    void loadWeights(float* weights, float* biases);
+};
+
+struct FullyConnectedLayerCUDA {
+    const cudnnHandle_t& handle;
+
+    const int in, out, batchSize;
+
+    float* d_weights, *d_biases, *d_output;
+
+    FullyConnectedLayerCUDA(cudnnHandle_t& hndl, int bs, int inSize, int outSize);
 
     float* forward(float* d_input);
     void loadWeights(float* weights, float* biases);
@@ -67,7 +77,7 @@ struct CudNNNetwork {
     SparseInFullyConnectedLayer fcp1;
     SparseOutFullyConnectedLayer fcp2;
     SparseInFullyConnectedLayer fcv1;
-    FullyConnectedLayer fcv2;
+    FullyConnectedLayerCUDA fcv2;
 
     cudnnHandle_t valueHandle;
     cudnnHandle_t policyHandle;
@@ -84,7 +94,7 @@ struct CudNNNetwork {
     CudNNNetwork(int bs, float* policyWeights, float* valueWeights) : fcp1(SparseInFullyConnectedLayer(policyHandle, bs, 768, 256)),
                                                                       fcp2(SparseOutFullyConnectedLayer(policyHandle, bs, 256, 4096)),
                                                                       fcv1(SparseInFullyConnectedLayer(valueHandle , bs, 768, 1024)),
-                                                                      fcv2(FullyConnectedLayer(valueHandle , bs, 1024, 1, false)) {
+                                                                      fcv2(FullyConnectedLayerCUDA(valueHandle , bs, 1024, 1)) {
         cudnnCreate(&policyHandle);
         cudnnCreate(&valueHandle);
 
