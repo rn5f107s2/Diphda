@@ -11,32 +11,6 @@
 
 #include "cudnn.h"
 
-struct CudaNetwork {
-    const int batchSize;
-
-    const int valueLayer1Size = 1024;
-    const int valueLayer2Size = 1;
-
-    const int policyLayer1Size = 256;
-    const int policyLayer2Size = 4096;
-
-    const int maxMoves  = 218;
-    const int maxInputs = 32;
-
-    float *d_policyOutput, *d_valueOutput;
-    float *d_valueIntermediate, *d_policyIntermediate;
-    float *d_policyWeights;
-    float *d_valueWeights;
-    
-    int* d_policyOutIndices;
-    int* d_inputIndices;
-
-    cudaStream_t valueStream, policyStream;
-
-    CudaNetwork(int batchSize, float* policyWeights, float* valueWeights);
-    void forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput);
-};
-
 class Network {
 public:
     Network(int bs) : batchSize(bs) {
@@ -71,7 +45,7 @@ public:
         if (cudaNetwork)
             delete cudaNetwork;
 
-        cudaNetwork = new CudNNNetwork(batchSize, policyWeights, valueWeights);
+        cudaNetwork = new DualNetwork(batchSize, policyWeights, valueWeights);
 
         free(policyWeights);
         free(valueWeights);
@@ -88,5 +62,5 @@ private:
     const int policyLayer1Size = 256;
     const int policyLayer2Size = 4096;
 
-    CudNNNetwork* cudaNetwork = nullptr;
+    DualNetwork* cudaNetwork = nullptr;
 };
