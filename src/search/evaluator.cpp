@@ -20,7 +20,7 @@ void Evaluator::forwardInternal() {
 
         //float q = w / sum - l / sum;
 
-        float q = std::tanh(value[0] / 2);
+        float q = std::tanh(value[0]);
 
         data.nodes[i]->virtualLoss(true);
         data.nodes[i]->backpropagate(-q);
