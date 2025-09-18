@@ -103,7 +103,7 @@ public:
     Evaluator(int bs) : batchSize(bs), collector(Collector(bs)) {
         net = new Network(batchSize);
 
-        net->loadWeights("sharedtest.bin");
+        net->loadWeights("a0block.bin");
 
         evaluationThread = std::thread(
             [&] {
