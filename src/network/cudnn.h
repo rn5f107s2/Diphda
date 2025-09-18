@@ -69,6 +69,27 @@ public:
     int loadWeights(float* weights) override;
 };
 
+class A0Block : public DenseLayer {
+    const cudnnHandle_t& handle;
+
+    const int batchSize, channels, kernelWidth, kernelHeight, height, width;
+
+    float* d_weightsc1, *d_weightsc2, *d_biasesc1, *d_biasesc2, *d_outputc1, *d_outputc2, *d_workspace;
+
+    size_t workspaceSize;
+
+    cudnnTensorDescriptor_t inputDesc, outputDesc, biasDesc;
+    cudnnFilterDescriptor_t kernelDesc;
+    cudnnConvolutionDescriptor_t convDesc;
+    cudnnActivationDescriptor_t actDesc;
+
+public:
+    A0Block(const cudnnHandle_t& hndl, int bs, int channels, int kw, int kh, int h, int w);
+
+    float* forward(float* d_input) override;
+    int loadWeights(float* weights) override;
+};
+
 class SparseInFullyConnectedLayer : public SparseLayer {
     const cudnnHandle_t& handle;
 
@@ -198,8 +219,8 @@ struct ValueHead {
     std::vector<DenseLayer*> layerStack;
 
     ValueHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
-        //#define VALUE_HEAD FULLY_CONNECTED(4096, 1)
-        layerStack.push_back(new FullyConnectedLayerCUDA(handle, batchSize, 4096, 1));
+        //#define VALUE_HEAD FULLY_CONNECTED(32 * 64, 1)
+        layerStack.push_back(new FullyConnectedLayerCUDA(handle, batchSize, 32 * 64, 1));
     }
 
     float* forward(float* d_input) {
@@ -229,11 +250,8 @@ struct PolicyHead {
     MaskedLayer* policyMaskingLayer;
 
     PolicyHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
-        //#define POLICY_HEAD CONVOLUTION_2D(64, 64) RELU FULLY_CONNECTED(4096, 4096)
-
-        layerStack.push_back(new ConvLayer(handle, batchSize, 64, 64, 3, 3, 8, 8));
-
-        policyMaskingLayer = new MaskedFullyConnectedLayer(handle, batchSize, 4096, 4096);
+        //#define FULLY_CONNECTED(32 * 64, 4096)
+        policyMaskingLayer = new MaskedFullyConnectedLayer(handle, batchSize, 32 * 64, 4096);
     }
 
     float* forward(float* d_input, int* d_mask) {
@@ -324,11 +342,12 @@ struct MultiHeadedNetwork {
 
         featureTransformer = new DensifyLayer(valueHandle, batchSize, 32, 768);
 
-        //#define BODY CONVOLUTION_2D(12, 64) RELU CONVOLUTION_2D(64, 64) RELU CONVOLUTION_2D(64, 64) RELU
+        // CONVOLUTION_2D(12, 32) RELU REP_4(A0_BLOCK(32))
 
-        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 64, 3, 3, 8, 8));
-        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 64, 64, 3, 3, 8, 8));
-        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 64, 64, 3, 3, 8, 8));
+        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 32, 3, 3, 8, 8));
+
+        for (int i = 0; i < 4; i++)
+            layerStack.push_back(new A0Block(valueHandle, batchSize, 32, 3, 3, 8, 8));
         
         weights += featureTransformer->loadWeights(weights);
 
@@ -336,7 +355,7 @@ struct MultiHeadedNetwork {
             weights += l->loadWeights(weights);
 
         weights = valueHead.loadWeights(weights);
-        policyHead.loadWeights(weights);
+        weights = policyHead.loadWeights(weights);
     }
 
     void forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput);
