@@ -350,7 +350,7 @@ A0Block::A0Block(const cudnnHandle_t& hndl, int bs, int c, int kw, int kh, int h
     cudnnSetConvolution2dDescriptor(convDesc, kernelHeight / 2, kernelWidth / 2, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT);
     cudnnSetActivationDescriptor(actDesc, CUDNN_ACTIVATION_RELU, CUDNN_PROPAGATE_NAN, 0.0);
 
-    cudnnGetConvolutionForwardWorkspaceSize(handle, inputDesc, kernelDesc, convDesc, outputDesc, CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM, &workspaceSize);
+    cudnnGetConvolutionForwardWorkspaceSize(handle, inputDesc, kernelDesc, convDesc, outputDesc, algo, &workspaceSize);
 
     cudaMalloc(&d_workspace, workspaceSize);
     cudaMalloc(&d_outputc1, channels * height * width * batchSize * sizeof(float));
@@ -379,9 +379,9 @@ float* A0Block::forward(float* d_input) {
     cudnnConvolutionBiasActivationForward(handle, &alpha1, 
                                           inputDesc, d_input, 
                                           kernelDesc, d_weightsc1,
-                                          convDesc, CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM, 
+                                          convDesc, algo, 
                                           d_workspace, workspaceSize, 
-                                          &alpha2, outputDesc, d_outputc1, 
+                                          &alpha2, outputDesc, d_outputc2, 
                                           biasDesc, d_biasesc1, 
                                           actDesc, 
                                           outputDesc, d_outputc1);
@@ -391,7 +391,7 @@ float* A0Block::forward(float* d_input) {
     cudnnConvolutionBiasActivationForward(handle, &alpha1, 
                                           outputDesc, d_outputc1, 
                                           kernelDesc, d_weightsc2,
-                                          convDesc, CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM, 
+                                          convDesc, algo, 
                                           d_workspace, workspaceSize, 
                                           &alpha2_secondConv, inputDesc, d_input, 
                                           biasDesc, d_biasesc2, 
