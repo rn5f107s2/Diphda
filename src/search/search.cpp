@@ -11,7 +11,7 @@ void Searcher::search(Position& pos, SearchTime& st) {
 
     prepareNewRoot(pos);
 
-    int nodes = 0;
+    uint64_t nodes = 0;
 
     for (; !shouldStop(st, nodes); nodes++) {
         Position copy = pos;

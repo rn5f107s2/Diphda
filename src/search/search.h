@@ -65,7 +65,7 @@ struct SearchTime {
 
 static const uint64_t MOVE_OVERHEAD = 10;
 
-inline bool shouldStop(SearchTime& st, int visits) {
+inline bool shouldStop(SearchTime& st, uint64_t visits) {
     if (visits >= st.nodesLimit)
         return true;
 
