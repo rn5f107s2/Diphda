@@ -1,6 +1,7 @@
 #include <cudnn.h>
 #include <stdio.h>
 #include <iostream>
+#include <iomanip>
 
 #include "cudnn.h"
 
@@ -285,6 +286,24 @@ float* FullyConnectedLayerCUDA::forward(float* d_input) {
                                             d_output, 
                                             d_weights, 
                                             d_biases);
+
+    return d_output;
+}
+
+int DensifyLayer::loadWeights(float* weights) {
+    return 0;
+}
+
+float* DensifyLayer::forward(int* d_input) {
+    int threads = 256;
+    int blocks = ceildiv(inSize * batchSize, threads);
+
+    cudaStream_t stream;
+    cudnnGetStream(handle, &stream);
+
+    cudaMemset(d_output, 0, outSize * batchSize * sizeof(float));
+
+    densify<<<threads, blocks, 0, stream>>>(d_input, d_output, inSize, outSize, batchSize);
 
     return d_output;
 }

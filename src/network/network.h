@@ -31,7 +31,7 @@ public:
     }
 
     void loadWeights(std::string filename) {
-        int nValueWeights  = 768 * valueLayer1Size  + valueLayer1Size  + valueLayer1Size  * valueLayer2Size  + valueLayer2Size;
+        int nValueWeights  = 44546;
         int nPolicyWeights = 768 * policyLayer1Size + policyLayer1Size + policyLayer1Size * policyLayer2Size + policyLayer2Size;
 
         float* valueWeights  = (float*) malloc(nValueWeights  * sizeof(float));
