@@ -103,7 +103,7 @@ public:
     Evaluator(int bs) : batchSize(bs), collector(Collector(bs)) {
         net = new Network(batchSize);
 
-        net->loadWeights("convvalue256policy.bin");
+        net->loadWeights("sharedtest.bin");
 
         evaluationThread = std::thread(
             [&] {

@@ -31,24 +31,20 @@ public:
     }
 
     void loadWeights(std::string filename) {
-        int nValueWeights  = 44546;
-        int nPolicyWeights = 768 * policyLayer1Size + policyLayer1Size + policyLayer1Size * policyLayer2Size + policyLayer2Size;
+        int nWeights  = 16903169;
 
-        float* valueWeights  = (float*) malloc(nValueWeights  * sizeof(float));
-        float* policyWeights = (float*) malloc(nPolicyWeights * sizeof(float));
+        float* w  = (float*) malloc(nWeights  * sizeof(float));
 
         std::ifstream weights(filename);
 
-        weights.read((char*) valueWeights , nValueWeights  * sizeof(float));
-        weights.read((char*) policyWeights, nPolicyWeights * sizeof(float));
+        weights.read((char*) w, nWeights * sizeof(float));
 
         if (cudaNetwork)
             delete cudaNetwork;
 
-        cudaNetwork = new DualNetwork(batchSize, policyWeights, valueWeights);
+        cudaNetwork = new MultiHeadedNetwork(batchSize, w);
 
-        free(policyWeights);
-        free(valueWeights);
+        free(w);
     }
 
 private:
@@ -62,5 +58,5 @@ private:
     const int policyLayer1Size = 256;
     const int policyLayer2Size = 4096;
 
-    DualNetwork* cudaNetwork = nullptr;
+    MultiHeadedNetwork* cudaNetwork = nullptr;
 };

@@ -186,6 +186,77 @@ struct PolicyNetwork {
     }
 };
 
+struct Body {
+
+};
+
+struct ValueHead {
+    const cudnnHandle_t& handle;
+
+    const int batchSize;
+
+    std::vector<DenseLayer*> layerStack;
+
+    ValueHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
+        //#define VALUE_HEAD FULLY_CONNECTED(4096, 1)
+        layerStack.push_back(new FullyConnectedLayerCUDA(handle, batchSize, 4096, 1));
+    }
+
+    float* forward(float* d_input) {
+        float* curr = d_input;
+
+        for (DenseLayer* l : layerStack)
+            curr = l->forward(curr);
+
+        return curr;
+    }
+
+    float* loadWeights(float* weights) {
+        for (DenseLayer* l : layerStack)
+            weights += l->loadWeights(weights);
+
+        return weights;
+    }
+};
+
+struct PolicyHead {
+    const cudnnHandle_t& handle;
+
+    const int batchSize;
+
+    std::vector<DenseLayer*> layerStack;
+
+    MaskedLayer* policyMaskingLayer;
+
+    PolicyHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
+        //#define POLICY_HEAD CONVOLUTION_2D(64, 64) RELU FULLY_CONNECTED(4096, 4096)
+
+        layerStack.push_back(new ConvLayer(handle, batchSize, 64, 64, 3, 3, 8, 8));
+
+        policyMaskingLayer = new MaskedFullyConnectedLayer(handle, batchSize, 4096, 4096);
+    }
+
+    float* forward(float* d_input, int* d_mask) {
+        float* curr = d_input;
+
+        for (DenseLayer* l : layerStack)
+            curr = l->forward(curr);
+
+        curr = policyMaskingLayer->forward(curr, d_mask);
+
+        return curr;
+    }
+
+    float* loadWeights(float* weights) {
+        for (DenseLayer* l : layerStack)
+            weights += l->loadWeights(weights);
+
+        weights += policyMaskingLayer->loadWeights(weights);
+
+        return weights;
+    }
+};
+
 struct DualNetwork {
     cudnnHandle_t valueHandle;
     cudnnHandle_t policyHandle;
@@ -215,6 +286,57 @@ struct DualNetwork {
 
         valueNet.loadWeights(valueWeights);
         policyNet.loadWeights(policyWeights);
+    }
+
+    void forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput);
+};
+
+struct MultiHeadedNetwork {
+    SparseLayer* featureTransformer;
+
+    std::vector<DenseLayer*> layerStack;
+
+    cudnnHandle_t valueHandle;
+    cudnnHandle_t policyHandle;
+
+    cudaStream_t valueStream;
+    cudaStream_t policyStream;
+
+    ValueHead valueHead;
+    PolicyHead policyHead;
+
+    int* d_input, *d_policyMask;
+
+    const int batchSize;
+
+    MultiHeadedNetwork(int bs, float* weights) : batchSize(bs), valueHead(ValueHead(valueHandle, bs)), policyHead(PolicyHead(policyHandle, bs)) {
+        cudnnCreate(&policyHandle);
+        cudnnCreate(&valueHandle);
+
+        cudaStreamCreate(&valueStream);
+        cudaStreamCreate(&policyStream);
+
+        cudnnSetStream(policyHandle, policyStream);
+        cudnnSetStream(valueHandle , valueStream );
+
+        cudaMalloc(&d_input, 32 * sizeof(int) * batchSize);
+        cudaMalloc(&d_policyMask, 218 * sizeof(int) * batchSize);
+
+        featureTransformer = new DensifyLayer(valueHandle, batchSize, 32, 768);
+
+        //#define BODY CONVOLUTION_2D(12, 64) RELU CONVOLUTION_2D(64, 64) RELU CONVOLUTION_2D(64, 64) RELU
+
+        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 64, 3, 3, 8, 8));
+        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 64, 64, 3, 3, 8, 8));
+        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 64, 64, 3, 3, 8, 8));
+        
+        weights += featureTransformer->loadWeights(weights);
+
+        for (DenseLayer* l : layerStack)
+            weights += l->loadWeights(weights);
+
+        weights = valueHead.loadWeights(weights);
+        policyHead.loadWeights(weights);
     }
 
     void forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput);

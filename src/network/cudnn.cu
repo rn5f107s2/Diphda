@@ -241,20 +241,6 @@ float* MaskedFullyConnectedLayer::forward(float* d_input, int* d_mask) {
     return d_output;
 }
 
-void DualNetwork::forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput) {
-    cudaMemcpy(d_input, inputIndices, sizeof(int) * batchSize * 32, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_policyMask, policyOutputIndices, sizeof(int) * batchSize * 218, cudaMemcpyHostToDevice);
-
-    float* v = valueNet.forward(d_input);
-    float* p = policyNet.forward(d_input, d_policyMask);
-
-    cudaStreamSynchronize(valueStream);
-    cudaStreamSynchronize(policyStream);
-
-    cudaMemcpy(valueOutput, v, batchSize * 1 * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(policyOutput, p, batchSize * 218 * sizeof(float), cudaMemcpyDeviceToHost);
-}
-
 FullyConnectedLayerCUDA::FullyConnectedLayerCUDA(const cudnnHandle_t& hndl, int bs, int inSize, int outSize) : handle(hndl),
                                                                                                                in(inSize), 
                                                                                                                out(outSize),
@@ -307,3 +293,39 @@ float* DensifyLayer::forward(int* d_input) {
 
     return d_output;
 }
+
+void DualNetwork::forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput) {
+    cudaMemcpy(d_input, inputIndices, sizeof(int) * batchSize * 32, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_policyMask, policyOutputIndices, sizeof(int) * batchSize * 218, cudaMemcpyHostToDevice);
+
+    float* v = valueNet.forward(d_input);
+    float* p = policyNet.forward(d_input, d_policyMask);
+
+    cudaStreamSynchronize(valueStream);
+    cudaStreamSynchronize(policyStream);
+
+    cudaMemcpy(valueOutput, v, batchSize * 1 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(policyOutput, p, batchSize * 218 * sizeof(float), cudaMemcpyDeviceToHost);
+}
+
+void MultiHeadedNetwork::forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput) {
+    cudaMemcpy(d_input, inputIndices, sizeof(int) * batchSize * 32, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_policyMask, policyOutputIndices, sizeof(int) * batchSize * 218, cudaMemcpyHostToDevice);
+
+    float* shared = featureTransformer->forward(d_input);
+
+    for (DenseLayer* l : layerStack)
+        shared = l->forward(shared);
+
+    cudaDeviceSynchronize();
+
+    float* v = valueHead.forward(shared);
+    float* p = policyHead.forward(shared, d_policyMask);
+
+    cudaStreamSynchronize(valueStream);
+    cudaStreamSynchronize(policyStream);
+
+    cudaMemcpy(valueOutput, v, batchSize * 1 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(policyOutput, p, batchSize * 218 * sizeof(float), cudaMemcpyDeviceToHost);
+}
+
