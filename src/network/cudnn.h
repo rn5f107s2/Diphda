@@ -69,7 +69,7 @@ public:
     int loadWeights(float* weights) override;
 };
 
-struct SparseInFullyConnectedLayer : public SparseLayer {
+class SparseInFullyConnectedLayer : public SparseLayer {
     const cudnnHandle_t& handle;
 
     const int batchSize, inSize, outSize;
@@ -83,7 +83,7 @@ public:
     int loadWeights(float* weights) override;
 };
 
-struct MaskedFullyConnectedLayer : public MaskedLayer {
+class MaskedFullyConnectedLayer : public MaskedLayer {
     const cudnnHandle_t& handle;
 
     const int batchSize, inSize, outSize;
@@ -97,6 +97,22 @@ public:
     int loadWeights(float* weights) override;
 };
 
+class DensifyLayer : public SparseLayer {
+    const cudnnHandle_t& handle;
+
+    const int batchSize, inSize, outSize;
+
+    float* d_output;
+
+public:
+    DensifyLayer(const cudnnHandle_t& hndl, int bs, int in, int out) : handle(hndl), batchSize(bs), inSize(in), outSize(out) {
+        cudaMalloc(&d_output, outSize * batchSize * sizeof(float));
+    }
+
+    float* forward(int* d_input) override;
+    int loadWeights(float* weights) override;
+};
+
 struct ValueNetwork {
     const cudnnHandle_t& handle;
 
@@ -107,9 +123,13 @@ struct ValueNetwork {
     std::vector<DenseLayer*> layerStack;
 
     ValueNetwork(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
-        featureTransformer = new SparseInFullyConnectedLayer(handle, batchSize, 768, 1024);
+        featureTransformer = new DensifyLayer(handle, batchSize, 32, 768);
 
-        layerStack.push_back(new FullyConnectedLayerCUDA(handle, batchSize, 1024, 1));
+        // CONVOLUTION_2D(12, 64) RELU CONVOLUTION_2D(64, 64) RELU CONVOLUTION_2D(64, 1) RELU FULLY_CONNECTED(64, 1)
+        layerStack.push_back(new ConvLayer(handle, batchSize, 12, 64, 3, 3, 8, 8));
+        layerStack.push_back(new ConvLayer(handle, batchSize, 64, 64, 3, 3, 8, 8));
+        layerStack.push_back(new ConvLayer(handle, batchSize, 64,  1, 3, 3, 8, 8));
+        layerStack.push_back(new FullyConnectedLayerCUDA(handle, batchSize, 64, 1));
     }
 
     float* forward(int* d_input) {
