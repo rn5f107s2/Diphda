@@ -78,6 +78,8 @@ class A0Block : public DenseLayer {
 
     size_t workspaceSize;
 
+    cudnnConvolutionFwdAlgo_t algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+
     cudnnTensorDescriptor_t inputDesc, outputDesc, biasDesc;
     cudnnFilterDescriptor_t kernelDesc;
     cudnnConvolutionDescriptor_t convDesc;
@@ -146,7 +148,6 @@ struct ValueNetwork {
     ValueNetwork(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
         featureTransformer = new DensifyLayer(handle, batchSize, 32, 768);
 
-        // CONVOLUTION_2D(12, 64) RELU CONVOLUTION_2D(64, 64) RELU CONVOLUTION_2D(64, 1) RELU FULLY_CONNECTED(64, 1)
         layerStack.push_back(new ConvLayer(handle, batchSize, 12, 64, 3, 3, 8, 8));
         layerStack.push_back(new ConvLayer(handle, batchSize, 64, 64, 3, 3, 8, 8));
         layerStack.push_back(new ConvLayer(handle, batchSize, 64,  1, 3, 3, 8, 8));
@@ -207,10 +208,6 @@ struct PolicyNetwork {
     }
 };
 
-struct Body {
-
-};
-
 struct ValueHead {
     const cudnnHandle_t& handle;
 
@@ -219,7 +216,6 @@ struct ValueHead {
     std::vector<DenseLayer*> layerStack;
 
     ValueHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
-        //#define VALUE_HEAD FULLY_CONNECTED(32 * 64, 1)
         layerStack.push_back(new FullyConnectedLayerCUDA(handle, batchSize, 32 * 64, 1));
     }
 
@@ -250,7 +246,6 @@ struct PolicyHead {
     MaskedLayer* policyMaskingLayer;
 
     PolicyHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
-        //#define FULLY_CONNECTED(32 * 64, 4096)
         policyMaskingLayer = new MaskedFullyConnectedLayer(handle, batchSize, 32 * 64, 4096);
     }
 
@@ -341,8 +336,6 @@ struct MultiHeadedNetwork {
         cudaMalloc(&d_policyMask, 218 * sizeof(int) * batchSize);
 
         featureTransformer = new DensifyLayer(valueHandle, batchSize, 32, 768);
-
-        // CONVOLUTION_2D(12, 32) RELU REP_4(A0_BLOCK(32))
 
         layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 32, 3, 3, 8, 8));
 
