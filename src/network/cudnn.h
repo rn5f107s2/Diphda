@@ -216,7 +216,11 @@ struct ValueHead {
     std::vector<DenseLayer*> layerStack;
 
     ValueHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
-        layerStack.push_back(new FullyConnectedLayerCUDA(handle, batchSize, 32 * 64, 1));
+        // #define VALUE_HEAD CONVOLUTION_2D(8, 32) RELU CONVOLUTION_2D(32, 2) RELU FULLY_CONNECTED(128, 1)
+
+        layerStack.push_back(new ConvLayer(handle, batchSize, 8, 32, 3, 3, 8, 8));
+        layerStack.push_back(new ConvLayer(handle, batchSize, 32, 2, 3, 3, 8, 8));
+        layerStack.push_back(new FullyConnectedLayerCUDA(handle, batchSize, 128, 1));
     }
 
     float* forward(float* d_input) {
@@ -246,7 +250,10 @@ struct PolicyHead {
     MaskedLayer* policyMaskingLayer;
 
     PolicyHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
-        policyMaskingLayer = new MaskedFullyConnectedLayer(handle, batchSize, 32 * 64, 4096);
+        // #define POLICY_HEAD CONVOLUTION_2D(8, 8) RELU FULLY_CONNECTED(8 * 64, 4096)
+
+        layerStack.push_back(new ConvLayer(handle, batchSize, 8, 8, 3, 3, 8, 8));
+        policyMaskingLayer = new MaskedFullyConnectedLayer(handle, batchSize, 8 * 64, 4096);
     }
 
     float* forward(float* d_input, int* d_mask) {
@@ -337,10 +344,10 @@ struct MultiHeadedNetwork {
 
         featureTransformer = new DensifyLayer(valueHandle, batchSize, 32, 768);
 
-        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 32, 3, 3, 8, 8));
+        layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 8, 3, 3, 8, 8));
 
-        for (int i = 0; i < 4; i++)
-            layerStack.push_back(new A0Block(valueHandle, batchSize, 32, 3, 3, 8, 8));
+        for (int i = 0; i < 1; i++)
+            layerStack.push_back(new A0Block(valueHandle, batchSize, 8, 3, 3, 8, 8));
         
         weights += featureTransformer->loadWeights(weights);
 
