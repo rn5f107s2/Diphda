@@ -49,7 +49,7 @@ public:
 
         free(w);
     }
-#endif
+#else
 
     void loadWeights(std::string filename) {
         int nValueWeights  = 768 * valueLayer1Size  + valueLayer1Size  + valueLayer1Size  * valueLayer2Size  + valueLayer2Size;
@@ -71,6 +71,7 @@ public:
         free(policyWeights);
         free(valueWeights);
     }
+#endif
 
 
 private:
@@ -87,6 +88,6 @@ private:
 #ifndef MULTI_HEAD
     DualNetwork* cudaNetwork = nullptr;
 #else
-    MultiHeadNetwork* cudaNetwork = nullptr;
+    MultiHeadedNetwork* cudaNetwork = nullptr;
 #endif
 };
