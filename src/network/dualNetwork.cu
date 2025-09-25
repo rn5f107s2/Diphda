@@ -1,12 +1,8 @@
 #include "dualNetwork.h"
 
 ValueNetwork::ValueNetwork(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
-    featureTransformer = new DensifyLayer(handle, batchSize, 32, 768);
-
-    layerStack.push_back(new ConvLayer(handle, batchSize, 12, 64, 3, 3, 8, 8));
-    layerStack.push_back(new ConvLayer(handle, batchSize, 64, 64, 3, 3, 8, 8));
-    layerStack.push_back(new ConvLayer(handle, batchSize, 64,  1, 3, 3, 8, 8));
-    layerStack.push_back(new FullyConnectedLayerSimple(handle, batchSize, 64, 1));
+    featureTransformer = new SparseInFullyConnectedLayer(handle, batchSize, 768, 1024);
+    layerStack.push_back(new FullyConnectedLayerSimple(handle, batchSize, 1024, 1));
 }
 
 float* ValueNetwork::forward(int* d_input) {

@@ -10,6 +10,7 @@
 #include <cudnn.h>
 
 #include "multiHeadedNetwork.h"
+#include "dualNetwork.h"
 
 class Network {
 public:
@@ -30,7 +31,9 @@ public:
         return &valueOutputBatched[valueLayer2Size * batchIdx];
     }
 
+#ifdef MULTI_HEAD
     void loadWeights(std::string filename) {
+        // Hm
         int nWeights  = 16903169;
 
         float* w  = (float*) malloc(nWeights  * sizeof(float));
@@ -46,6 +49,29 @@ public:
 
         free(w);
     }
+#endif
+
+    void loadWeights(std::string filename) {
+        int nValueWeights  = 768 * valueLayer1Size  + valueLayer1Size  + valueLayer1Size  * valueLayer2Size  + valueLayer2Size;
+        int nPolicyWeights = 768 * policyLayer1Size + policyLayer1Size + policyLayer1Size * policyLayer2Size + policyLayer2Size;
+
+        float* valueWeights  = (float*) malloc(nValueWeights  * sizeof(float));
+        float* policyWeights = (float*) malloc(nPolicyWeights * sizeof(float));
+
+        std::ifstream weights(filename);
+
+        weights.read((char*) valueWeights , nValueWeights  * sizeof(float));
+        weights.read((char*) policyWeights, nPolicyWeights * sizeof(float));
+
+        if (cudaNetwork)
+            delete cudaNetwork;
+
+        cudaNetwork = new DualNetwork(batchSize, policyWeights, valueWeights);
+
+        free(policyWeights);
+        free(valueWeights);
+    }
+
 
 private:
     const int batchSize;
@@ -58,5 +84,9 @@ private:
     const int policyLayer1Size = 256;
     const int policyLayer2Size = 4096;
 
-    MultiHeadedNetwork* cudaNetwork = nullptr;
+#ifndef MULTI_HEAD
+    DualNetwork* cudaNetwork = nullptr;
+#else
+    MultiHeadNetwork* cudaNetwork = nullptr;
+#endif
 };
