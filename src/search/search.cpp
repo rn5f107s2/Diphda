@@ -27,25 +27,51 @@ void Searcher::search(Position& pos, SearchTime& st) {
 
     evaluator->forwardBlocking();
 
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    auto searchTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-
     bool win = root->info.state() == WIN;
 
     auto criterium = win ? [] (Node& n) { if (n.info.state() != LOSS) return -1.0; return double(31 - n.info.ply()); } 
                          : [] (Node& n) { return n.getQ(); };
 
-    Node* best = selectBest(criterium);
+    Node* best = selectBest(root, criterium);
 
-    std::string value = win ? std::to_string(best->info.ply() + 1)
-                            : std::to_string(int(std::round(std::atanh(best->getQ()) * 2 * 133)));
-                             
+    sendInfo(nodes, begin);             
 
-    std::cout << "info depth 1 score " << (!win ? "cp " : "mate ") << value << " nps " << (nodes * 1000 / (searchTime + 1)) << std::endl;
     std::cout << "bestmove " << best->getMove().toString() << std::endl;
 
     priorPos       = pos;
     priorPosExists = true;
+}
+
+
+void Searcher::sendInfo(uint64_t nodes, std::chrono::steady_clock::time_point& begin) {
+    bool win = root->info.state() == WIN;
+
+    auto criterium = win ? [] (Node& n) { if (n.info.state() != LOSS) return -1.0; return double(31 - n.info.ply()); } 
+                         : [] (Node& n) { return n.getQ(); };
+
+    Node* best = selectBest(root, criterium);
+
+    std::string value = win ? std::to_string(best->info.ply() + 1)
+                            : std::to_string(int(std::round(std::atanh(best->getQ()) * 2 * 133)));
+
+    std::chrono::steady_clock::time_point current = std::chrono::steady_clock::now();
+
+    auto searchTime = std::chrono::duration_cast<std::chrono::milliseconds>(current - begin).count();
+
+    std::cout << "info depth 1 score " << (!win ? "cp " : "mate ") << value 
+              << " nodes " << nodes 
+              << " time " << searchTime 
+              << " nps " << (nodes * 1000 / (searchTime + 1)) 
+              << " pv " << getPv(root, criterium) << std::endl;
+}
+
+std::string Searcher::getPv(Node* n, std::function<double(Node&)> func) {
+    if (!n->children)
+        return "";
+
+    Node* best = selectBest(n, func);
+
+    return best->getMove().toString() + " " + getPv(best, func);
 }
 
 void Searcher::clear() {
@@ -142,18 +168,18 @@ void Searcher::prepareNewRoot(Position& pos) {
     evaluator->forwardBlocking();
 }
 
-Node* Searcher::selectBest(std::function<double(Node&)> func) {
+Node* Searcher::selectBest(Node* n, std::function<double(Node&)> func) {
     Node*  selected = nullptr;
     double best     = -std::numeric_limits<double>::infinity();
 
-    for (int i = 0; i < root->childCount; i++) {
-        double val = func(root->children[i]);
+    for (int i = 0; i < n->childCount; i++) {
+        double val = func(n->children[i]);
 
         if (val < best)
             continue;
 
         best     = val;
-        selected = root->children + i;
+        selected = n->children + i;
     }
 
     return selected;

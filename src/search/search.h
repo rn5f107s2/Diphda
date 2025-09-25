@@ -38,7 +38,10 @@ protected:
     Node* findNewRoot(Position& pos);
     Node* createNewRoot();
 
-    Node* selectBest(std::function<double(Node&)> func);
+    void sendInfo(uint64_t nodes, std::chrono::steady_clock::time_point& begin);
+    std::string getPv(Node* n, std::function<double(Node&)> func);
+
+    Node* selectBest(Node* n, std::function<double(Node&)> func);
 
     Evaluator* evaluator;
 
