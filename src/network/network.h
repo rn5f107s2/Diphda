@@ -9,7 +9,7 @@
 #include <cuda_runtime.h>
 #include <cudnn.h>
 
-#include "cudnn.h"
+#include "multiHeadedNetwork.h"
 
 class Network {
 public:
