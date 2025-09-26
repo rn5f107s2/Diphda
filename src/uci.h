@@ -27,6 +27,7 @@ private:
     void position(const std::string &arguments);
     void setoption(const std::string &arguments);
     void ucinewgame(const std::string &arguments);
+    void backendbench(const std::string &arguments);
 
     void loop();
     void handleInput(const std::string &in);

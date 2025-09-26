@@ -5,6 +5,7 @@
 #include "perft.h"
 #include "games/game.h"
 #include "search/search.h"
+#include "network/benchmark.h"
 
 UCIHandler::UCIHandler() {
     internalBoard = new Position();
@@ -19,6 +20,7 @@ UCIHandler::UCIHandler() {
     commands["position"] = &UCIHandler::position;
     commands["setoption"] = &UCIHandler::setoption;
     commands["ucinewgame"] = &UCIHandler::ucinewgame;
+    commands["backendbench"] = &UCIHandler::backendbench;
 
     uciOptions.insert(uciOptions.begin(), searcher.getOptions().begin(), searcher.getOptions().end());
 } 
@@ -164,4 +166,8 @@ void UCIHandler::setoption(const std::string &arguments) {
 
 void UCIHandler::ucinewgame(const std::string& arguments) {
     searcher.clear();
+}
+
+void UCIHandler::backendbench(const std::string& arguments) {
+    bench();
 }
