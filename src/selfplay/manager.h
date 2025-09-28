@@ -15,7 +15,7 @@ private:
 
     bool activeHalf = false;
 
-    uint64_t nodesSearched = 0;
+    uint64_t nodesSearched = 0, gamesPlayed = 0, positions = 0;
     std::chrono::steady_clock::time_point begin;
 
     std::array<std::vector<SelfplaySearcher>, 2> games;

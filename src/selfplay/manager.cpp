@@ -34,6 +34,8 @@ void SelfplayManager::collectNode(int gameIdx) {
         record.pushBack(MoveInfo(game.getRoot(), action->index));
 
         game.playMove(action->getMove());
+
+        positions++;
     }
 
     if (game.isTerminal()) {
@@ -44,6 +46,8 @@ void SelfplayManager::collectNode(int gameIdx) {
         record.clear();
 
         game.startNewGame();
+
+        gamesPlayed++;
     }
 
     game.addSingle();
@@ -59,11 +63,11 @@ void SelfplayManager::run() {
     while (true) { 
         collectBatch();
 
-        if (nodesSearched % 1000000 == 0) {
+        if (nodesSearched % 10000000 == 0) {
             auto current = std::chrono::steady_clock::now();
             auto npms    = nodesSearched / std::chrono::duration_cast<std::chrono::milliseconds>(current - begin).count();
 
-            std::cout << "NPS: " << npms * 1000 << std::endl;
+            std::cout << "\rPlayed " << gamesPlayed << " games containing " << positions << " positions at " << (npms * 1000) << " nps" << std::flush;
 
             begin = std::chrono::steady_clock::now();
             nodesSearched = 0;
