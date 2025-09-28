@@ -12,6 +12,8 @@
 #include "multiHeadedNetwork.h"
 #include "dualNetwork.h"
 
+#define MULTI_HEAD
+
 class Network {
 public:
     Network(int bs) : batchSize(bs) {
