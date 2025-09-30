@@ -69,6 +69,9 @@ void SelfplayManager::run() {
 
             std::cout << "\rPlayed " << gamesPlayed << " games containing " << positions << " positions at " << (npms * 1000) << " nps" << std::flush;
 
+            if (gamesPlayed >= 5000)
+                exit(0);
+
             begin = std::chrono::steady_clock::now();
             nodesSearched = 0;
         }
