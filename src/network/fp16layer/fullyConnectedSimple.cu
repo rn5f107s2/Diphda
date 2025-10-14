@@ -30,8 +30,8 @@ FullyConnectedLayerSimple::FullyConnectedLayerSimple(const cudnnHandle_t& hndl, 
 int FullyConnectedLayerSimple::loadWeights(float* weights) {
     int nWeights = in * out;
 
-    cudaMemcpy(d_weights, weights, nWeights * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_biases, weights + nWeights, out * sizeof(float), cudaMemcpyHostToDevice);
+    copyConvertToDevice(d_weights, weights, nWeights);
+    copyConvertToDevice(d_biases, weights + nWeights, out);
 
     return nWeights + out;
 }
@@ -49,8 +49,6 @@ float* FullyConnectedLayerSimple::forward(__half* d_input) {
                                             d_output, 
                                             d_weights, 
                                             d_biases);
-
-    CHECK_CUDA(cudaDeviceSynchronize());
 
     return d_output;
 }

@@ -30,7 +30,5 @@ __half* DensifyLayer::forward(int* d_input) {
 
     densify<<<threads, blocks, 0, stream>>>(d_input, d_output, inSize, outSize, batchSize);
 
-    CHECK_CUDA(cudaDeviceSynchronize());
-
     return d_output;
 }

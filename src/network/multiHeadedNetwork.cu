@@ -23,6 +23,8 @@ float* ValueHead::loadWeights(float* weights) {
     for (DenseLayer* l : layerStack)
         weights += l->loadWeights(weights);
 
+    weights += ol->loadWeights(weights);
+
     return weights;
 }
 
@@ -91,21 +93,6 @@ void MultiHeadedNetwork::forward(int* inputIndices, int* policyOutputIndices, fl
         shared = l->forward(shared);
 
     cudaDeviceSynchronize();
-
-
-    __half output[64 * 8];
-
-    cudaMemcpy(output, shared, sizeof(__half) * 64 * 8, cudaMemcpyDeviceToHost);
-
-    for (int i = 0; i < 64 * 8; i++) {
-        std::cout << std::setprecision(3) << __half2float(output[i]) << " ";
-
-        if (i % 8 == 7)
-            std::cout << std::endl;
-
-        if (i % 64 == 63)
-            std::cout << std::endl;
-    }
 
     float* v = valueHead.forward(shared);
     float* p = policyHead.forward(shared, d_policyMask);

@@ -53,7 +53,5 @@ float* MaskedFullyConnectedLayer::forward(__half* d_input, int* d_mask) {
                                                          d_weights, 
                                                          d_biases);
 
-    CHECK_CUDA(cudaDeviceSynchronize());
-
     return d_output;
 }
