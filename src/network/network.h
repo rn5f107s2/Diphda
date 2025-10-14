@@ -9,8 +9,9 @@
 #include <cuda_runtime.h>
 #include <cudnn.h>
 
+#define MULTI_HEAD
+
 #include "multiHeadedNetwork.h"
-#include "dualNetwork.h"
 
 class Network {
 public:

@@ -9,11 +9,12 @@ class MaskedFullyConnectedLayer : public MaskedLayer {
 
     const int batchSize, inSize, outSize;
 
-    float* d_weights, *d_biases, *d_output;
+    __half* d_weights, *d_biases;
+    float *d_output;
 
 public:
     MaskedFullyConnectedLayer(const cudnnHandle_t& hndl, int bs, int is, int os);
 
-    float* forward(float* d_input, int* d_mask) override;
+    float* forward(__half* d_input, int* d_mask) override;
     int loadWeights(float* weights) override;
 };

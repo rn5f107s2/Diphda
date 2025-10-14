@@ -1,7 +1,7 @@
 #include "fullyConnectedMasked.h"
 #include "../util.h"
 
-__global__ void fcfwbatchedsparseout(int batchSize, int in, int* out, int nOut, int outSize, float* input, float* output, float* weights, float* biases) {
+__global__ void fcfwbatchedsparseout(int batchSize, int in, int* out, int nOut, int outSize, __half* input, float* output, __half* weights, __half* biases) {
     int threadId = blockDim.x * blockIdx.x + threadIdx.x;
     int batch    = threadId / nOut;
 
@@ -14,28 +14,28 @@ __global__ void fcfwbatchedsparseout(int batchSize, int in, int* out, int nOut, 
     if (outIdx == -1)
         return;
 
-    output[batch * nOut + idx] = biases[outIdx];
+    output[batch * nOut + idx] = __half2float(biases[outIdx]);
 
     for (int i = 0; i < in; i++)
-        output[batch * nOut + idx] += weights[i * outSize + outIdx] * input[batch * in + i];
+        output[batch * nOut + idx] += __half2float(__hmul(weights[i * outSize + outIdx], input[batch * in + i]));
 }
 
 MaskedFullyConnectedLayer::MaskedFullyConnectedLayer(const cudnnHandle_t& hndl, int bs, int is, int os) : handle(hndl), batchSize(bs), inSize(is), outSize(os) {
-    cudaMalloc(&d_weights, inSize * outSize * sizeof(float));
-    cudaMalloc(&d_biases, outSize * sizeof(float));
+    cudaMalloc(&d_weights, inSize * outSize * sizeof(__half));
+    cudaMalloc(&d_biases, outSize * sizeof(__half));
     cudaMalloc(&d_output, 218 * batchSize * sizeof(float));
 }
 
 int MaskedFullyConnectedLayer::loadWeights(float* weights) {
     int nWeights = inSize * outSize;
 
-    cudaMemcpy(d_weights, weights, nWeights * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_biases, weights + nWeights, outSize * sizeof(float), cudaMemcpyHostToDevice);
+    copyConvertToDevice(d_weights, weights, nWeights);
+    copyConvertToDevice(d_biases, weights + nWeights, outSize);
 
     return nWeights + outSize;
 }
 
-float* MaskedFullyConnectedLayer::forward(float* d_input, int* d_mask) {
+float* MaskedFullyConnectedLayer::forward(__half* d_input, int* d_mask) {
     int threads = 256;
     int blocks = ceildiv(batchSize * 218, threads);
 
@@ -52,6 +52,8 @@ float* MaskedFullyConnectedLayer::forward(float* d_input, int* d_mask) {
                                                          d_output, 
                                                          d_weights, 
                                                          d_biases);
+
+    CHECK_CUDA(cudaDeviceSynchronize());
 
     return d_output;
 }

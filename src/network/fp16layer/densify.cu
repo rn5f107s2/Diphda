@@ -1,7 +1,7 @@
 #include "densify.h"
 #include "../util.h"
 
-__global__ void densify(int* sparse, float* dense, int N, int out, int bs) {
+__global__ void densify(int* sparse, __half* dense, int N, int out, int bs) {
     int threadId = blockDim.x * blockIdx.x + threadIdx.x;
     int batch    = threadId / N;
     int idx      = threadId % N;
@@ -19,16 +19,18 @@ int DensifyLayer::loadWeights(float* weights) {
     return 0;
 }
 
-float* DensifyLayer::forward(int* d_input) {
+__half* DensifyLayer::forward(int* d_input) {
     int threads = 256;
     int blocks = ceildiv(inSize * batchSize, threads);
 
     cudaStream_t stream;
     cudnnGetStream(handle, &stream);
 
-    cudaMemset(d_output, 0, outSize * batchSize * sizeof(float));
+    cudaMemset(d_output, 0, outSize * batchSize * sizeof(__half));
 
     densify<<<threads, blocks, 0, stream>>>(d_input, d_output, inSize, outSize, batchSize);
+
+    CHECK_CUDA(cudaDeviceSynchronize());
 
     return d_output;
 }

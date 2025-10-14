@@ -9,7 +9,7 @@ class A0Block : public DenseLayer {
 
     const int batchSize, channels, kernelWidth, kernelHeight, height, width;
 
-    float* d_weightsc1, *d_weightsc2, *d_biasesc1, *d_biasesc2, *d_outputc1, *d_outputc2, *d_workspace;
+    __half* d_weightsc1, *d_weightsc2, *d_biasesc1, *d_biasesc2, *d_outputc1, *d_outputc2, *d_workspace;
 
     size_t workspaceSize;
 
@@ -23,6 +23,6 @@ class A0Block : public DenseLayer {
 public:
     A0Block(const cudnnHandle_t& hndl, int bs, int channels, int kw, int kh, int h, int w);
 
-    float* forward(float* d_input) override;
+    __half* forward(__half* d_input) override;
     int loadWeights(float* weights) override;
 };

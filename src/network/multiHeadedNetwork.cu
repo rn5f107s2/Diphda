@@ -1,19 +1,22 @@
+#include <iostream>
+#include <iomanip>
+
 #include "multiHeadedNetwork.h"
 
 ValueHead::ValueHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
     // #define VALUE_HEAD CONVOLUTION_2D(8, 32) RELU CONVOLUTION_2D(32, 2) RELU FULLY_CONNECTED(128, 1)
     layerStack.push_back(new ConvLayer(handle, batchSize, 8, 32, 3, 3, 8, 8));
     layerStack.push_back(new ConvLayer(handle, batchSize, 32, 2, 3, 3, 8, 8));
-    layerStack.push_back(new FullyConnectedLayerSimple(handle, batchSize, 128, 1));
+    ol = new FullyConnectedLayerSimple(handle, batchSize, 128, 1);
 }
 
-float* ValueHead::forward(float* d_input) {
-    float* curr = d_input;
+float* ValueHead::forward(__half* d_input) {
+    __half* curr = d_input;
 
     for (DenseLayer* l : layerStack)
         curr = l->forward(curr);
 
-    return curr;
+    return ol->forward(curr);
 }
 
 float* ValueHead::loadWeights(float* weights) {
@@ -23,15 +26,15 @@ float* ValueHead::loadWeights(float* weights) {
     return weights;
 }
 
-float* PolicyHead::forward(float* d_input, int* d_mask) {
-    float* curr = d_input;
+float* PolicyHead::forward(__half* d_input, int* d_mask) {
+    __half* curr = d_input;
 
     for (DenseLayer* l : layerStack)
         curr = l->forward(curr);
 
-    curr = policyMaskingLayer->forward(curr, d_mask);
+    float* ret = policyMaskingLayer->forward(curr, d_mask);
 
-    return curr;
+    return ret;
 }
 
 float* PolicyHead::loadWeights(float* weights) {
@@ -82,12 +85,27 @@ void MultiHeadedNetwork::forward(int* inputIndices, int* policyOutputIndices, fl
     cudaMemcpy(d_input, inputIndices, sizeof(int) * batchSize * 32, cudaMemcpyHostToDevice);
     cudaMemcpy(d_policyMask, policyOutputIndices, sizeof(int) * batchSize * 218, cudaMemcpyHostToDevice);
 
-    float* shared = featureTransformer->forward(d_input);
+    __half* shared = featureTransformer->forward(d_input);
 
     for (DenseLayer* l : layerStack)
         shared = l->forward(shared);
 
     cudaDeviceSynchronize();
+
+
+    __half output[64 * 8];
+
+    cudaMemcpy(output, shared, sizeof(__half) * 64 * 8, cudaMemcpyDeviceToHost);
+
+    for (int i = 0; i < 64 * 8; i++) {
+        std::cout << std::setprecision(3) << __half2float(output[i]) << " ";
+
+        if (i % 8 == 7)
+            std::cout << std::endl;
+
+        if (i % 64 == 63)
+            std::cout << std::endl;
+    }
 
     float* v = valueHead.forward(shared);
     float* p = policyHead.forward(shared, d_policyMask);

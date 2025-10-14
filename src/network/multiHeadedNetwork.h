@@ -3,12 +3,12 @@
 #include <cudnn.h>
 #include <vector>
 
-#include "layer/layerTypes.h"
-#include "layer/conv.h"
-#include "layer/fullyConnectedSimple.h"
-#include "layer/a0Block.h"
-#include "layer/fullyConnectedMasked.h"
-#include "layer/densify.h"
+#include "fp16layer/layerTypes.h"
+#include "fp16layer/conv.h"
+#include "fp16layer/fullyConnectedSimple.h"
+#include "fp16layer/a0block.h"
+#include "fp16layer/fullyConnectedMasked.h"
+#include "fp16layer/densify.h"
 
 class ValueHead {
     const cudnnHandle_t& handle;
@@ -16,11 +16,13 @@ class ValueHead {
     const int batchSize;
 
     std::vector<DenseLayer*> layerStack;
+
+    ValueOutput* ol;
  
 public:
     ValueHead(const cudnnHandle_t& hndl, int bs);
 
-    float* forward(float* d_input);
+    float* forward(__half* d_input);
     float* loadWeights(float* weights);
 };
 
@@ -36,7 +38,7 @@ class PolicyHead {
 public:
     PolicyHead(const cudnnHandle_t& hndl, int bs);
 
-    float* forward(float* d_input, int* d_mask);
+    float* forward(__half* d_input, int* d_mask);
     float* loadWeights(float* weights);
 };
 
