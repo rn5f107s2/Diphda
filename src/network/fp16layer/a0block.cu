@@ -22,9 +22,9 @@ A0Block::A0Block(const cudnnHandle_t& hndl, int bs, int c, int kw, int kh, int h
     cudnnSetConvolution2dDescriptor(convDesc, kernelHeight / 2, kernelWidth / 2, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_HALF);
     cudnnSetActivationDescriptor(actDesc, CUDNN_ACTIVATION_RELU, CUDNN_PROPAGATE_NAN, 0.0);
 
-    cudnnGetConvolutionForwardWorkspaceSize(handle, inputDesc, kernelDesc, convDesc, outputDesc, algo, &workspaceSize);
-
     cudnnSetConvolutionMathType(convDesc, CUDNN_TENSOR_OP_MATH);
+
+    cudnnGetConvolutionForwardWorkspaceSize(handle, inputDesc, kernelDesc, convDesc, outputDesc, algo, &workspaceSize);
 
     cudaMalloc(&d_workspace, workspaceSize);
     cudaMalloc(&d_outputc1, channels * height * width * batchSize * sizeof(__half));

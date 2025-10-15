@@ -13,7 +13,7 @@ class A0Block : public DenseLayer {
 
     size_t workspaceSize;
 
-    cudnnConvolutionFwdAlgo_t algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+    cudnnConvolutionFwdAlgo_t algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
 
     cudnnTensorDescriptor_t inputDesc, outputDesc, biasDesc;
     cudnnFilterDescriptor_t kernelDesc;
