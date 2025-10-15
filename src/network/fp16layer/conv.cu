@@ -16,7 +16,7 @@ ConvLayer::ConvLayer(const cudnnHandle_t& hndl, int bs, int ic, int oc, int kw, 
     cudnnCreateConvolutionDescriptor(&convDesc);
     cudnnCreateActivationDescriptor(&actDesc);
 
-    cudnnTensorFormat_t layout = (outChannels == 8 && inChannels == 8) || (outChannels == 2 && inChannels == 32) ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
+    cudnnTensorFormat_t layout = (outChannels == 8 && inChannels == 8) ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
     cudnnSetTensor4dDescriptor(inputDesc, CUDNN_TENSOR_NHWC, CUDNN_DATA_HALF, batchSize, inChannels, height, width);
     cudnnSetTensor4dDescriptor(outputDesc, layout, CUDNN_DATA_HALF, batchSize, outChannels, height, width);

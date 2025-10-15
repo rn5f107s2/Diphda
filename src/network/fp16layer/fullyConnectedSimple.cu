@@ -33,7 +33,7 @@ int FullyConnectedLayerSimple::loadWeights(float* weights) {
     copyConvertToDevice(d_weights, weights, nWeights);
     copyConvertToDevice(d_biases, weights + nWeights, out);
 
-    //convertToOHWC(d_weights, out, in / 64, 8, 8);
+    convertToOHWC(d_weights, out, in / 64, 8, 8);
 
     return nWeights + out;
 }
