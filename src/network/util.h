@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cuda.h>
 #include <cuda_fp16.h>
 
 #include <iostream>
@@ -30,9 +31,9 @@ inline int ceildiv(int n, int m) {
     return (n + m - 1) / m;
 }
 
-template<typename T> 
+template<typename T>
 inline void copyConvertToDevice(T* d_dst, float* src, int n) {
-    std::cerr << "Unsupported type to copy to" << std::endl;
+    std::cerr << "Unsupported conversion" << std::endl;
 }
 
 template<>
@@ -51,3 +52,5 @@ template<>
 inline void copyConvertToDevice<float>(float* d_dst, float* src, int n) {
     cudaMemcpy(d_dst, src, n * sizeof(float), cudaMemcpyHostToDevice);
 }
+
+void convertToOHWC(__half* d_mem, int o, int c, int h, int w);

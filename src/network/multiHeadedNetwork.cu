@@ -70,7 +70,7 @@ MultiHeadedNetwork::MultiHeadedNetwork(int bs, float* weights) : batchSize(bs) {
     cudaMalloc(&d_input, 32 * sizeof(int) * batchSize);
     cudaMalloc(&d_policyMask, 218 * sizeof(int) * batchSize);
 
-    featureTransformer = new DensifyLayer(valueHandle, batchSize, 32, 768);
+    featureTransformer = new DensifyNCHWToNHWCLayer(valueHandle, batchSize, 32, 12, 8, 8);
 
     layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 8, 3, 3, 8, 8));
 

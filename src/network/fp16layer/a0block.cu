@@ -15,10 +15,10 @@ A0Block::A0Block(const cudnnHandle_t& hndl, int bs, int c, int kw, int kh, int h
     cudnnCreateConvolutionDescriptor(&convDesc);
     cudnnCreateActivationDescriptor(&actDesc);
 
-    cudnnSetTensor4dDescriptor(inputDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, batchSize, channels, height, width);
-    cudnnSetTensor4dDescriptor(outputDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, batchSize, channels, height, width);
-    cudnnSetTensor4dDescriptor(biasDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, 1, channels, 1, 1);
-    cudnnSetFilter4dDescriptor(kernelDesc, CUDNN_DATA_HALF, CUDNN_TENSOR_NCHW, channels, channels, kernelHeight, kernelWidth);
+    cudnnSetTensor4dDescriptor(inputDesc, CUDNN_TENSOR_NHWC, CUDNN_DATA_HALF, batchSize, channels, height, width);
+    cudnnSetTensor4dDescriptor(outputDesc, CUDNN_TENSOR_NHWC, CUDNN_DATA_HALF, batchSize, channels, height, width);
+    cudnnSetTensor4dDescriptor(biasDesc, CUDNN_TENSOR_NHWC, CUDNN_DATA_HALF, 1, channels, 1, 1);
+    cudnnSetFilter4dDescriptor(kernelDesc, CUDNN_DATA_HALF, CUDNN_TENSOR_NHWC, channels, channels, kernelHeight, kernelWidth);
     cudnnSetConvolution2dDescriptor(convDesc, kernelHeight / 2, kernelWidth / 2, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_HALF);
     cudnnSetActivationDescriptor(actDesc, CUDNN_ACTIVATION_RELU, CUDNN_PROPAGATE_NAN, 0.0);
 
@@ -42,6 +42,9 @@ int A0Block::loadWeights(float* weights) {
     copyConvertToDevice(d_biasesc1, weights + nWeightsPerConv, channels);
     copyConvertToDevice(d_weightsc2, weights + nWeightsPerConv + channels, nWeightsPerConv);
     copyConvertToDevice(d_biasesc2, weights + 2 * nWeightsPerConv + channels, channels);
+
+    convertToOHWC(d_weightsc1, channels, channels, kernelHeight, kernelWidth);
+    convertToOHWC(d_weightsc2, channels, channels, kernelHeight, kernelWidth);
 
     return 2 * (nWeightsPerConv + channels);
 }

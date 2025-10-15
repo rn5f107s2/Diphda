@@ -9,6 +9,7 @@
 #include "fp16layer/a0block.h"
 #include "fp16layer/fullyConnectedMasked.h"
 #include "fp16layer/densify.h"
+#include "fp16layer/densifyNCHWToNHWC.h"
 
 class ValueHead {
     const cudnnHandle_t& handle;
