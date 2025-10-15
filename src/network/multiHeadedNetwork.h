@@ -53,8 +53,8 @@ class MultiHeadedNetwork {
     cudaStream_t valueStream;
     cudaStream_t policyStream;
 
-    ValueHead valueHead;
-    PolicyHead policyHead;
+    ValueHead* valueHead;
+    PolicyHead* policyHead;
 
     int* d_input, *d_policyMask;
 

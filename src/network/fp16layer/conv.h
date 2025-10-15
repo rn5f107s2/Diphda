@@ -18,7 +18,7 @@ class ConvLayer : public DenseLayer {
     cudnnConvolutionDescriptor_t convDesc;
     cudnnActivationDescriptor_t actDesc;
 
-    cudnnConvolutionFwdAlgo_t algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+    cudnnConvolutionFwdAlgo_t algo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
 
 public:
     ConvLayer(const cudnnHandle_t& hndl, int bs, int ic, int oc, int kw, int kh, int h, int w, bool activate = true);

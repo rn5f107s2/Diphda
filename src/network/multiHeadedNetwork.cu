@@ -54,7 +54,7 @@ PolicyHead::PolicyHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchS
     policyMaskingLayer = new MaskedFullyConnectedLayer(handle, batchSize, 8 * 64, 4096);
 }
 
-MultiHeadedNetwork::MultiHeadedNetwork(int bs, float* weights) : batchSize(bs), valueHead(ValueHead(valueHandle, bs)), policyHead(PolicyHead(policyHandle, bs)) {
+MultiHeadedNetwork::MultiHeadedNetwork(int bs, float* weights) : batchSize(bs) {
     cudnnCreate(&policyHandle);
     cudnnCreate(&valueHandle);
 
@@ -63,6 +63,9 @@ MultiHeadedNetwork::MultiHeadedNetwork(int bs, float* weights) : batchSize(bs), 
 
     cudnnSetStream(policyHandle, policyStream);
     cudnnSetStream(valueHandle , valueStream );
+
+    valueHead = new ValueHead(valueHandle, bs);
+    policyHead = new PolicyHead(policyHandle, bs);
 
     cudaMalloc(&d_input, 32 * sizeof(int) * batchSize);
     cudaMalloc(&d_policyMask, 218 * sizeof(int) * batchSize);
@@ -79,8 +82,8 @@ MultiHeadedNetwork::MultiHeadedNetwork(int bs, float* weights) : batchSize(bs), 
     for (DenseLayer* l : layerStack)
         weights += l->loadWeights(weights);
 
-    weights = valueHead.loadWeights(weights);
-    weights = policyHead.loadWeights(weights);
+    weights = valueHead->loadWeights(weights);
+    weights = policyHead->loadWeights(weights);
 }
 
 void MultiHeadedNetwork::forward(int* inputIndices, int* policyOutputIndices, float* valueOutput, float* policyOutput) {
@@ -94,8 +97,8 @@ void MultiHeadedNetwork::forward(int* inputIndices, int* policyOutputIndices, fl
 
     cudaDeviceSynchronize();
 
-    float* v = valueHead.forward(shared);
-    float* p = policyHead.forward(shared, d_policyMask);
+    float* v = valueHead->forward(shared);
+    float* p = policyHead->forward(shared, d_policyMask);
 
     cudaStreamSynchronize(valueStream);
     cudaStreamSynchronize(policyStream);
