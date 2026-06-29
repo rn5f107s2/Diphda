@@ -6,19 +6,11 @@
 #include "../games/game.h"
 
 void bench() {
-<<<<<<< HEAD
     constexpr int batchSize = 128;
 
     Position pos; pos.setStartpos();
     Network* net = new Network(batchSize);
     net->loadWeights("Leel64x4.bin");
-=======
-    constexpr int batchSize = 100;
-
-    Position pos; pos.setStartpos();
-    Network net(batchSize);
-    net.loadWeights("Leela8x1.bin");
->>>>>>> 8x1rlrun
 
     int inputs[32 * batchSize];
     int outputIndices[218 * batchSize];
@@ -40,11 +32,7 @@ void bench() {
     uint64_t nodes = 0;
 
     while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() < 1000) {
-<<<<<<< HEAD
         net->forward(inputs, outputIndices);
-=======
-        net.forward(inputs, outputIndices);
->>>>>>> 8x1rlrun
         nodes += batchSize;
     }
 

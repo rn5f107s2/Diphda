@@ -103,11 +103,7 @@ public:
     Evaluator(int bs) : batchSize(bs), collector(Collector(bs)) {
         net = new Network(batchSize);
 
-<<<<<<< HEAD
         net->loadWeights("Leel64x4.bin");
-=======
-        net->loadWeights("zeroRLNet48.bin");
->>>>>>> 8x1rlrun
 
         evaluationThread = std::thread(
             [&] {
