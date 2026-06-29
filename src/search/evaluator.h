@@ -9,6 +9,8 @@
 #include "node.h"
 #include "../network/network.h"
 
+extern std::string defaultEvalFile;
+
 struct CollectedData {
     int* inputIndices;
     int* policyIndices;
@@ -103,7 +105,7 @@ public:
     Evaluator(int bs) : batchSize(bs), collector(Collector(bs)) {
         net = new Network(batchSize);
 
-        net->loadWeights("Leel64x4.bin");
+        net->loadWeights(defaultEvalFile);
 
         evaluationThread = std::thread(
             [&] {

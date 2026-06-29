@@ -26,17 +26,22 @@ UCIHandler::UCIHandler() {
 } 
 
 void UCIHandler::start(int argc, char** argv) {
-    if (argc == 1)
-        return loop();
+    bool keepalive = false;
 
     for (int i = 1; i < argc; i++) {
         std::string in = argv[i];
     
         if (in == "quit")
             break;
-    
-        handleInput(in);
+
+        if (in == "keepalive")
+            keepalive = true;
+        else
+            handleInput(in);
     }
+
+    if (argc == 1 || keepalive)
+        return loop();
 }
 
 void UCIHandler::loop() {

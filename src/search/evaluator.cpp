@@ -4,6 +4,8 @@
 
 #include <chrono>
 
+std::string defaultEvalFile = "Leel64x4.bin";
+
 void Evaluator::forwardInternal() {
     CollectedData& data = collector.getHalf(false);
 
