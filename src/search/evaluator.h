@@ -93,8 +93,8 @@ private:
     void forwardInternal();
 
 public:
-    void forward(float temperature = 1.0f);
-    void forwardBlocking(float temperature = 1.0f);
+    void forward();
+    void forwardBlocking();
 
     Collector& getCollector() {
         return collector;
@@ -103,7 +103,11 @@ public:
     Evaluator(int bs) : batchSize(bs), collector(Collector(bs)) {
         net = new Network(batchSize);
 
+<<<<<<< HEAD
         net->loadWeights("Leel64x4.bin");
+=======
+        net->loadWeights("zeroRLNet48.bin");
+>>>>>>> 8x1rlrun
 
         evaluationThread = std::thread(
             [&] {

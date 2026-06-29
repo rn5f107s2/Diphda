@@ -6,7 +6,7 @@
 
 #include "node.h"
 #include "evaluator.h"
-#include "parameters.h"
+#include "searchparams.h"
 #include "../games/game.h"
 #include "../network/network.h"
 
@@ -29,7 +29,7 @@ public:
         params.update();
     }
 
-private:
+protected:
     bool     priorPosExists = false;
     Position priorPos;
     Node*    root = nullptr;
