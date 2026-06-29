@@ -10,7 +10,7 @@ void bench() {
 
     Position pos; pos.setStartpos();
     Network* net = new Network(batchSize);
-    net->loadWeights("Leela8x1.bin");
+    net->loadWeights("Leel64x4.bin");
 
     int inputs[32 * batchSize];
     int outputIndices[218 * batchSize];

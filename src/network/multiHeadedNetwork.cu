@@ -5,7 +5,7 @@
 
 ValueHead::ValueHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
     // #define VALUE_HEAD CONVOLUTION_2D(8, 32) RELU CONVOLUTION_2D(32, 2) RELU FULLY_CONNECTED(128, 1)
-    layerStack.push_back(new ConvLayer(handle, batchSize, 8, 32, 3, 3, 8, 8));
+    layerStack.push_back(new ConvLayer(handle, batchSize, 64, 32, 3, 3, 8, 8));
     layerStack.push_back(new ConvLayer(handle, batchSize, 32, 2, 3, 3, 8, 8));
     ol = new FullyConnectedLayerSimple(handle, batchSize, 128, 1);
 }
@@ -50,7 +50,7 @@ float* PolicyHead::loadWeights(float* weights) {
 
 PolicyHead::PolicyHead(const cudnnHandle_t& hndl, int bs) : handle(hndl), batchSize(bs) {
     // #define POLICY_HEAD CONVOLUTION_2D(8, 8) RELU FULLY_CONNECTED(8 * 64, 4096)
-    layerStack.push_back(new ConvLayer(handle, batchSize, 8, 8, 3, 3, 8, 8));
+    layerStack.push_back(new ConvLayer(handle, batchSize, 64, 8, 3, 3, 8, 8));
     policyMaskingLayer = new MaskedFullyConnectedLayer(handle, batchSize, 8 * 64, 4096);
 }
 
@@ -72,10 +72,10 @@ MultiHeadedNetwork::MultiHeadedNetwork(int bs, float* weights) : batchSize(bs) {
 
     featureTransformer = new DensifyNCHWToNHWCLayer(valueHandle, batchSize, 32, 12, 8, 8);
 
-    layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 8, 3, 3, 8, 8));
+    layerStack.push_back(new ConvLayer(valueHandle, batchSize, 12, 64, 3, 3, 8, 8));
 
-    for (int i = 0; i < 1; i++)
-        layerStack.push_back(new A0Block(valueHandle, batchSize, 8, 3, 3, 8, 8));
+    for (int i = 0; i < 4; i++)
+        layerStack.push_back(new A0Block(valueHandle, batchSize, 64, 3, 3, 8, 8));
     
     weights += featureTransformer->loadWeights(weights);
 
