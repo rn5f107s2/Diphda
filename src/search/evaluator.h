@@ -20,7 +20,7 @@ struct CollectedData {
 
     std::mutex mtx;
 
-    int idx = 0;
+    volatile int idx = 0;
     const int batchSize;
     bool forwardEarly = false;
 
@@ -91,8 +91,8 @@ private:
 
     Collector collector;
 
-    bool batchReady;
-    bool evaluating;
+    bool batchReady = false;
+    bool evaluating = false;
 
     void forwardInternal();
 
