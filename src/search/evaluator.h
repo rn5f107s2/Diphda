@@ -18,6 +18,8 @@ struct CollectedData {
 
     Node** nodes;
 
+    std::mutex mtx;
+
     int idx = 0;
     const int batchSize;
     bool forwardEarly = false;
@@ -42,8 +44,8 @@ struct CollectedData {
         free(nodes);
     }
 
-    void writeInputIndices(Position& pos);
-    void writePolicyIndices(Position& pos, MoveList& ml);
+    void writeInputIndices(Position& pos, int index);
+    void writePolicyIndices(Position& pos, MoveList& ml, int index);
     void pushBack(Node* node, Position& pos, MoveList& ml, float temp);
 
     void clear() {

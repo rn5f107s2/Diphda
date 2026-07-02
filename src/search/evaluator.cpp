@@ -4,13 +4,14 @@
 
 #include <chrono>
 
-std::string defaultEvalFile = "Leel64x4.bin";
+std::string defaultEvalFile = "64x4RL_22.bin";
 
 void Evaluator::forwardInternal() {
     CollectedData& data = collector.getHalf(false);
 
     net->forward(data.inputIndices, data.policyIndices);
 
+    #pragma omp parallel for num_threads(4) schedule(static)    
     for (int i = 0; i < data.idx; i++) {
         float* value = net->getValue(i);
 
@@ -37,21 +38,23 @@ void Evaluator::forwardInternal() {
 }
 
 void CollectedData::pushBack(Node* node, Position& pos, MoveList& ml, float temp) {
-    nodes       [idx] = node;
-    temperatures[idx] = temp;
+    std::unique_lock lk(mtx);
+    int index = idx++;
+    lk.unlock();
 
-    writeInputIndices(pos);
-    writePolicyIndices(pos, ml);
+    nodes       [index] = node;
+    temperatures[index] = temp;
 
-    idx++;
+    writeInputIndices(pos, index);
+    writePolicyIndices(pos, ml, index);
 }
 
-void CollectedData::writeInputIndices(Position& pos) {
-    pos.toChess768Dense(inputIndices + 32 * idx);
+void CollectedData::writeInputIndices(Position& pos, int index) {
+    pos.toChess768Dense(inputIndices + 32 * index);
 }
 
-void CollectedData::writePolicyIndices(Position& pos, MoveList& ml){
-    int* indices = policyIndices + 218 * idx;
+void CollectedData::writePolicyIndices(Position& pos, MoveList& ml, int index){
+    int* indices = policyIndices + 218 * index;
 
     for (int i = 0; i < ml.length(); i++)
         indices[i] = pos.indexOf(ml[i]);

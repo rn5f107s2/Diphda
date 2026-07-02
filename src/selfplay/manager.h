@@ -26,6 +26,9 @@ private:
 
     std::ofstream outFile;
 
+    std::mutex mtx;
+
+
 public:
     SelfplayManager();
 

@@ -16,6 +16,7 @@ SelfplayManager::SelfplayManager() {
 }
 
 void SelfplayManager::collectBatch() {
+    #pragma omp parallel for num_threads(4) schedule(static)
     for (int i = 0; i < miniBatchSize; i++)
         collectNode(i);
 
@@ -41,7 +42,11 @@ void SelfplayManager::collectNode(int gameIdx) {
     if (game.isTerminal()) {
         record.setResult(game.ww(), game.d(), game.wl());
 
+        std::unique_lock lk(mtx);
+
         outFile << record << std::flush;
+
+        lk.unlock();
 
         record.clear();
 
@@ -63,7 +68,7 @@ void SelfplayManager::run() {
     while (true) { 
         collectBatch();
 
-        if (nodesSearched % 10000000 == 0) {
+        if (nodesSearched >= 10000000) {
             auto current = std::chrono::steady_clock::now();
             auto npms    = nodesSearched / std::chrono::duration_cast<std::chrono::milliseconds>(current - begin).count();
 
