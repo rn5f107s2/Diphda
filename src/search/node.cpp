@@ -4,11 +4,11 @@
 #include "searchparams.h"
 
 void Node::search(Position& pos, Collector& collector, const SearchParameters& params, float c) {
-    if (!visits.load(std::memory_order_relaxed))
-        return expand(pos, collector);
-
     if (info.waiting())
         return collector.earlyFull();
+
+    if (!visits.load(std::memory_order_relaxed))
+        return expand(pos, collector);
 
     if (info.state() != ONGOING && !info.ply())
         return backpropagate(info.state() == WIN ? -1.0 : (info.state() == LOSS ? 1.0 : 0.0));

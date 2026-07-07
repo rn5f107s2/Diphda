@@ -68,14 +68,15 @@ void SelfplaySearcher::doPlayout() {
     root->parent = rp;
 }
 
-void SelfplaySearcher::addSingle() {
+void SelfplaySearcher::addSingle(int samplesPerGame) {
     if (!rootReady)
         return prepareRoot();
 
     if (!dirichlet)
         applyDirichlet();
 
-    doPlayout();
+    for (int i = 0; i < samplesPerGame; i++)
+        doPlayout();
 }
 
 float SelfplaySearcher::getTemperature() {
@@ -129,13 +130,31 @@ Node* SelfplaySearcher::chooseAction() {
 
     float temperature = getTemperature();
 
-    auto score = [&] (Node& n) { return std::pow(double(n.visits.load(std::memory_order_relaxed)), double(1. / temperature)); };
+    auto score = [&] (Node& n) { 
+        uint64_t visits = n.visits.load(std::memory_order_relaxed);
+
+        if (temperature <= 0)
+            return double(visits);
+
+        return visits ? std::log(double(visits)) / double(temperature) : -1.0;
+    };
 
     double sum = 0;
+    double max = -1;
+    std::vector<double> logScores; logScores.reserve(root->childCount);
     std::vector<double> scores; scores.reserve(root->childCount);
 
     for (int i = 0; i < root->childCount; i++) {
-        scores.push_back(score(root->children[i]));
+        double logScore = score(root->children[i]);
+    
+        logScores.push_back(logScore);
+        max = std::max(max, logScore);
+    }
+
+    for (int i = 0; i < root->childCount; i++) {
+        bool dontSample = logScores[i] < 0 || (temperature <= 0 && logScores[i] != max);
+
+        scores.push_back(dontSample ? 0.0 : std::exp(logScores[i] - max));
         sum += scores.back();
     }
      

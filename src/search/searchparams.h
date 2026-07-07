@@ -5,9 +5,9 @@
 #define OPTION_NAME(name) name##_opt
 
 #define PARAMS                   \
-    X(cpuct, 1.414, 0.1, 3)      \
-    X(root_cpuct, 2.0, 1.0, 7.0) \
-    X(root_pst, 2.0, 1.0, 7.0)
+    X(cpuct, 1.8, 0.1, 3)      \
+    X(root_cpuct, 2.2, 1.0, 7.0) \
+    X(root_pst, 1.4, 1.0, 7.0)
 
 struct SearchParameters {
 private:

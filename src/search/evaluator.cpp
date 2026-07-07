@@ -11,7 +11,7 @@ void Evaluator::forwardInternal() {
 
     net->forward(data.inputIndices, data.policyIndices);
 
-    #pragma omp parallel for num_threads(4) schedule(static)    
+    #pragma omp parallel for num_threads(8) schedule(static)    
     for (int i = 0; i < data.idx; i++) {
         float* value = net->getValue(i);
 

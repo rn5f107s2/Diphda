@@ -2,7 +2,8 @@
 
 SelfplayManager::SelfplayManager() {
     miniBatchSize   = std::min(params.maxConcurrentGames / 2, params.maxMiniBatchSize);
-    concurrentGames = 2 * miniBatchSize;
+    concurrentGames = 2 * (miniBatchSize / params.samplesPerGame);
+    miniBatchSize   = (concurrentGames / 2) * params.samplesPerGame;
 
     eval = new Evaluator(miniBatchSize);
 
@@ -16,9 +17,11 @@ SelfplayManager::SelfplayManager() {
 }
 
 void SelfplayManager::collectBatch() {
-    #pragma omp parallel for num_threads(4) schedule(static)
-    for (int i = 0; i < miniBatchSize; i++)
+    #pragma omp parallel for num_threads(8) schedule(static)
+    for (int i = 0; i < miniBatchSize / params.samplesPerGame; i++)
         collectNode(i);
+
+    nodesSearched += eval->getCollector().getHalf(true).idx;
 
     eval->forward();
 
@@ -55,9 +58,7 @@ void SelfplayManager::collectNode(int gameIdx) {
         gamesPlayed++;
     }
 
-    game.addSingle();
-
-    nodesSearched++;
+    game.addSingle(params.samplesPerGame);
 }
 
 void SelfplayManager::run() {
@@ -74,7 +75,7 @@ void SelfplayManager::run() {
 
             std::cout << "\rPlayed " << gamesPlayed << " games containing " << positions << " positions at " << (npms * 1000) << " nps" << std::flush;
 
-            if (gamesPlayed >= 5000)
+            if (gamesPlayed >= 30000)
                 exit(0);
 
             begin = std::chrono::steady_clock::now();

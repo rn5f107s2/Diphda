@@ -35,7 +35,7 @@ public:
         startNewGame();
     }
 
-    void addSingle();
+    void addSingle(int samplesPerGame);
     void playMove(Move m);
     void startNewGame();
 

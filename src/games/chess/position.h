@@ -263,6 +263,12 @@ inline bool Position::isDrawn() {
     if (fiftyMoveRule >= 100 && !isLost())
         return true;
 
+    if (   !getPieces(PieceType::PAWN) 
+        && !getPieces(PieceType::ROOK)
+        && !getPieces(PieceType::QUEEN)
+        &&  __builtin_popcountll(getPieces(PieceType::KNIGHT) | getPieces(PieceType::BISHOP)) <= 1)
+        return true;
+
     return hasRepeated();
 }
 
